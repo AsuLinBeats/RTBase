@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Sampling.h"
@@ -38,14 +38,18 @@ public:
 		n = _n;
 		d = _d;
 	}
-	// Add code here
+	// Check if ray intersect with plane
 	bool rayIntersect(Ray& r, float& t)
 	{
+		if (n.x * (r.o.x + t * r.dir.x) + n.y * (r.o.y + t * r.dir.y) + n.z * (r.o.z + t * r.dir.z) + d >= 0)
+		{
+			return true;
+		}
 		return false;
 	}
 };
 
-#define EPSILON 0.001f
+#define EPSILON 0.001f   // a small float
 
 class Triangle
 {
@@ -71,13 +75,81 @@ public:
 	}
 	Vec3 centre() const
 	{
+		// Get the centre of the triangle
 		return (vertices[0].p + vertices[1].p + vertices[2].p) / 3.0f;
 	}
-	// Add code here
+#if 0
 	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
+		// 两步走: 点在平面上, 点在三角形内部.
+		// calculate the distance between the ray origin and the plane
+		float t1 = (d - Dot(n, r.o)) / Dot(n, r.dir);
+		if (t1 < 0) {
+			return false;
+		}
+		// 知道t就可以计算交点
+		Vec3 ps = r.o + r.dir * t1; // 和平面的交点
+		Vec3 e3 = vertices[1].p - vertices[0].p;
+
+		// 计算交点是否在三角形内部
+		Vec3 ee1 = ps - vertices[0].p;
+		Vec3 ee2 = ps - vertices[1].p;
+		Vec3 ee3 = ps - vertices[2].p;
+
+		Vec3 c1 = ee1.cross(e3);
+		Vec3 c2 = ee2.cross(e1);
+		Vec3 c3 = ee3.cross(e2);
+
+		if (Dot(c1, c2) > 0 && Dot(c1, c3) > 0)
+		{
+			return true;
+		}
+
 		return true;
 	}
+#endif
+
+	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const {
+		// 计算edge
+		Vec3 e1 = vertices[1].p - vertices[0].p;
+		Vec3 e2 = vertices[2].p - vertices[0].p;
+		Vec3 p = Cross(r.dir, e2);
+
+		float det = Dot(e1, p);
+		//if (det == 0.f) {
+		//	return false; // situation when ray and triangle are parallel
+		//}
+
+		// 浮点数计算存在精度误差,可能导致bug,因此表示浮点数==0时一般规定一个非常小的数然后让其小于那个数得到0
+		if (det <= EPSILON) return false;
+		float invdet = 1 / det;
+
+		Vec3 T = r.o - vertices[0].p;
+		u = Dot(T, p) * invdet;
+		if (u > 1.f || u < 0.f) return false;
+		Vec3 q = Cross(T, e1);
+		v = Dot(r.dir, q) * invdet;
+		if ((v < 0.f) || u + v > 1.f) return false;
+		t = Dot(e2, q) * invdet;
+		return t > 0.f;
+
+	}
+
+	bool rayIntersect1(const Ray& r, float& t, float& u, float& v) const
+	{
+		float denom = Dot(n, r.dir);
+		if (denom == 0) { return false; }
+		t = (d - Dot(n, r.o)) / denom;
+		if (t < 0) { return false; }
+		Vec3 p = r.at(t);
+		float invArea = 1.0f / Dot(e1.cross(e2), n);
+		u = Dot(e1.cross(p - vertices[1].p), n) * invArea;
+		if (u < 0 || u > 1.0f) { return false; }
+		v = Dot(e2.cross(p - vertices[2].p), n) * invArea;
+		if (v < 0 || (u + v) > 1.0f) { return false; }
+		return true;
+	}
+
 	void interpolateAttributes(const float alpha, const float beta, const float gamma, Vec3& interpolatedNormal, float& interpolatedU, float& interpolatedV) const
 	{
 		interpolatedNormal = vertices[0].normal * alpha + vertices[1].normal * beta + vertices[2].normal * gamma;
@@ -118,17 +190,57 @@ public:
 	// Add code here
 	bool rayAABB(const Ray& r, float& t)
 	{
-		return true;
+
+		float txmin = (min.x - r.o.x) / r.dir.x;
+		float txmax = (max.x - r.o.x) / r.dir.x;
+		if (r.dir.x < 0) std::swap(txmin, txmax);
+
+		float tymin = (min.y - r.o.y) / r.dir.y;
+		float tymax = (max.y - r.o.y) / r.dir.y;
+		if (r.dir.y < 0) std::swap(tymin, tymax);
+
+		float tzmin = (min.z - r.o.z) / r.dir.z;
+		float tzmax = (max.z - r.o.z) / r.dir.z;
+		if (r.dir.z < 0) std::swap(tzmin, tzmax);
+
+		float tenter = std::max((txmin, tymin), tzmin);
+		float texit = std::min((txmax, tymax), tzmax);
+
+		if (tenter <= texit && texit > 0) {
+			return true;
+		}
+
+		return false;
 	}
 	// Add code here
 	bool rayAABB(const Ray& r)
 	{
-		return true;
+		float txmin = (min.x - r.o.x) / r.dir.x;
+		float txmax = (max.x - r.o.x) / r.dir.x;
+		if (r.dir.x < 0) std::swap(txmin, txmax);
+
+		float tymin = (min.y - r.o.y) / r.dir.y;
+		float tymax = (max.y - r.o.y) / r.dir.y;
+		if (r.dir.y < 0) std::swap(tymin, tymax);
+
+		float tzmin = (min.z - r.o.z) / r.dir.z;
+		float tzmax = (max.z - r.o.z) / r.dir.z;
+		if (r.dir.z < 0) std::swap(tzmin, tzmax);
+
+		float tenter = std::max((txmin, tymin), tzmin);
+		float texit = std::min((txmax, tymax), tzmax);
+
+		if (tenter <= texit && texit > 0) {
+			return true;
+		}
+
+		return false;
 	}
 	// Add code here
 	float area()
 	{
 		Vec3 size = max - min;
+
 		return ((size.x * size.y) + (size.y * size.z) + (size.x * size.z)) * 2.0f;
 	}
 };

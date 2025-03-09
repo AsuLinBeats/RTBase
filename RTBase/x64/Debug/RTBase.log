@@ -1,0 +1,44 @@
+﻿  Main.cpp
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(96,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(103,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(138,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(145,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(187,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(194,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(233,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(240,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(281,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(288,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(325,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(332,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(377,70): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(384,59): warning C4305: 'argument': truncation from 'double' to 'const float'
+  (compiling source file 'Main.cpp')
+  
+  RTBase.vcxproj -> C:\Users\u2100583\source\RTBaseNew\x64\Debug\RTBase.exe

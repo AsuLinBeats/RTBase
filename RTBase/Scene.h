@@ -27,11 +27,33 @@ public:
 		origin = camera.mulPoint(Vec3(0, 0, 0));
 	}
 	// Add code here
-	Ray generateRay(float x, float y)
+	Ray generateRay1(float x, float y)
 	{
-		Vec3 dir(0, 0, 1);
+		// camera position is at origin
+		float xc = 2.f * x / width - 1.f;
+		float yc = 2.f * y / height - 1.f;
+
+		Vec3 pdir(xc, yc, 0);
+		pdir.normalize();
+		Vec3 pCam = inverseProjectionMatrix.mulVec(pdir);
+		//Vec3 result = camera * dcam;
+		Vec3 dir = (pCam - origin).normalize();
 		return Ray(origin, dir);
 	}
+
+	Ray generateRay(float x, float y)
+	{
+		float xprime = x / width;
+		float yprime = 1.0f - (y / height);
+		xprime = (xprime * 2.0f) - 1.0f;
+		yprime = (yprime * 2.0f) - 1.0f;
+		Vec3 dir(xprime, yprime, 1.0f);
+		dir = inverseProjectionMatrix.mulPoint(dir);
+		dir = camera.mulVec(dir);
+		dir = dir.normalize();
+		return Ray(origin, dir);
+	}
+
 };
 
 class Scene
@@ -47,7 +69,7 @@ public:
 	void build()
 	{
 		// Add BVH building code here
-		
+
 		// Do not touch the code below this line!
 		// Build light list
 		for (int i = 0; i < triangles.size(); i++)
@@ -144,7 +166,8 @@ public:
 			}
 			shadingData.frame.fromVector(shadingData.sNormal);
 			shadingData.t = intersection.t;
-		} else
+		}
+		else
 		{
 			shadingData.wo = -ray.dir;
 			shadingData.t = intersection.t;

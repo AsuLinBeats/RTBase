@@ -17,8 +17,8 @@ public:
 	Scene* scene;
 	GamesEngineeringBase::Window* canvas;
 	Film* film;
-	MTRandom *samplers;
-	std::thread **threads;
+	MTRandom* samplers;
+	std::thread** threads;
 	int numProcs;
 	void init(Scene* _scene, GamesEngineeringBase::Window* _canvas)
 	{
@@ -29,7 +29,7 @@ public:
 		SYSTEM_INFO sysInfo;
 		GetSystemInfo(&sysInfo);
 		numProcs = sysInfo.dwNumberOfProcessors;
-		threads = new std::thread*[numProcs];
+		threads = new std::thread * [numProcs];
 		samplers = new MTRandom[numProcs];
 		clear();
 	}
@@ -81,6 +81,44 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+
+	const int tilesize = 16; // try 16*16 first
+#if 0
+	void renderTile() {
+		for (unsigned int tiley = 0; tiley < film->height; tiley += tilesize)
+		{
+			for (unsigned int tilex = 0; tilex < tilesize; tilex += tilesize)
+			{
+				int x_start = tilex;
+				int x_end = min(tilex + tilesize, film->width);
+				int y_start = tiley;
+				int y_end = min(tiley + tilesize, film->height);
+
+				for (int y = y_start; y < y_end; y++) {
+					for (int x = x_start; x < x_end; x++) {
+						// raytracing happens here
+				// pick a point in pixel
+						float px = x + 0.5f;
+						float py = y + 0.5f;
+						Ray ray = scene->camera.generateRay(px, py);
+						Colour col = viewNormals(ray);
+						//Colour col = albedo(ray);
+						film->splat(px, py, col);
+						unsigned char r = (unsigned char)(col.r * 255);
+						unsigned char g = (unsigned char)(col.g * 255);
+						unsigned char b = (unsigned char)(col.b * 255);
+						canvas->draw(x, y, r, g, b);
+					}
+				}
+			}
+		}
+	}
+#endif
+
+
+
+
+
 	void render()
 	{
 		film->incrementSPP();
@@ -88,6 +126,8 @@ public:
 		{
 			for (unsigned int x = 0; x < film->width; x++)
 			{
+				// raytracing happens here
+				// pick a point in pixel
 				float px = x + 0.5f;
 				float py = y + 0.5f;
 				Ray ray = scene->camera.generateRay(px, py);
@@ -101,6 +141,9 @@ public:
 			}
 		}
 	}
+
+
+
 	int getSPP()
 	{
 		return film->SPP;
