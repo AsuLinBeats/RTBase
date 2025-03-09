@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\u2100583\\source\\RTBaseNew\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\GamesEngineeringBase.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\GamesEngineeringBase.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Lights.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
@@ -50,7 +50,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 10,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -66,7 +66,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "GamesEngineeringBase.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\GamesEngineeringBase.h",
               "RelativeDocumentMoniker": "RTBase\\GamesEngineeringBase.h",
@@ -78,15 +78,16 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "Imaging.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h",
               "RelativeDocumentMoniker": "RTBase\\Imaging.h",
               "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h",
               "RelativeToolTip": "RTBase\\Imaging.h",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAPAAAAAAAAAAAAAAAMoAAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-03-09T16:49:26.691Z"
+              "WhenOpened": "2025-03-09T16:49:26.691Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -150,13 +151,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Main.cpp",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
               "RelativeDocumentMoniker": "RTBase\\Main.cpp",
               "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
               "RelativeToolTip": "RTBase\\Main.cpp",
-              "ViewState": "AgIAADAAAAAAAAAAAAAAAHEAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAAAGAAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-03-09T16:31:05.569Z",
               "EditorCaption": ""

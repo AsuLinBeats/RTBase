@@ -167,6 +167,55 @@ public:
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
 		// Return a tonemapped pixel at coordinates x, y
+		// Change values directly inside the function
+		//TODO: Implement a tonemapping operator
+
+		// get the pixel value
+		Colour pixel = film[(y * width) + x] * exposure / (float)SPP; // film is an 1d array, so we need to calculate the index
+		// get luminance
+		float L = 0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b;
+		double temp = 1 / 2.2f;
+		float formula = std::pow((L / 1 + L), temp);
+
+
+		// reinhard Global
+		r *= formula;
+		g *= formula;
+		b *= formula;
+
+		// gamma correction
+		r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		// Return a tonemapped pixel at coordinates x, y
+
+	}
+
+	float Clamp(float& x, float& A, float& B, float& C, float& D, float& E, float& F, float& W) {
+		return (x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F) - (E / F);
+	}
+
+	void filmicToneMap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f,
+		float A = 0.15f, float B = 0.5f, float C = 0.1f, float D = 0.2f, float E = 0.02f, float F = 0.3f,float W = 11.2f) {
+		Colour pixel = film[(y * width) + x] * exposure / (float)SPP; // film is an 1d array, so we need to calculate the index
+		// filmic tonemapping
+		float L = 0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b;
+		// filmic tonemapping
+		float CLuminance = Clamp(L,A,B,C,D,E,F,W);
+		float CW = Clamp(W, A, B, C, D, E, F, W);
+		double temp = 1 / 2.2f;
+		float Lout = (float) std::pow((CLuminance / CW), temp);
+
+		r *= Lout;
+		g *= Lout;
+		b *= Lout;
+
+		// gamma correction
+		r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		// Return a tonemapped pixel at coordinates x, y
+
 	}
 	// Do not change any code below this line
 	void init(int _width, int _height, ImageFilter* _filter)
