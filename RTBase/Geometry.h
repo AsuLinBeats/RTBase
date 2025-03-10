@@ -109,33 +109,36 @@ public:
 	}
 #endif
 
-	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const {
-		// 计算edge
-		Vec3 e1 = vertices[1].p - vertices[0].p;
-		Vec3 e2 = vertices[2].p - vertices[0].p;
-		Vec3 p = Cross(r.dir, e2);
+	bool rayIntersect1(const Ray& r, float& t, float& u, float& v) const
+	{
+		// 两步走: 点在平面上, 点在三角形内部.
+		// calculate the distance between the ray origin and the plane
+		float t1 = (d - Dot(n, r.o)) / Dot(n, r.dir);
+		if (t1 < 0) {
+			return false;
+		}
+		// 知道t就可以计算交点
+		Vec3 ps = r.o + r.dir * t1; // 和平面的交点
+		Vec3 e3 = vertices[1].p - vertices[0].p;
 
-		float det = Dot(e1, p);
-		//if (det == 0.f) {
-		//	return false; // situation when ray and triangle are parallel
-		//}
+		// 计算交点是否在三角形内部
+		Vec3 ee1 = ps - vertices[0].p;
+		Vec3 ee2 = ps - vertices[1].p;
+		Vec3 ee3 = ps - vertices[2].p;
 
-		// 浮点数计算存在精度误差,可能导致bug,因此表示浮点数==0时一般规定一个非常小的数然后让其小于那个数得到0
-		if (det <= EPSILON) return false;
-		float invdet = 1 / det;
+		Vec3 c1 = ee1.cross(e3);
+		Vec3 c2 = ee2.cross(e1);
+		Vec3 c3 = ee3.cross(e2);
 
-		Vec3 T = r.o - vertices[0].p;
-		u = Dot(T, p) * invdet;
-		if (u > 1.f || u < 0.f) return false;
-		Vec3 q = Cross(T, e1);
-		v = Dot(r.dir, q) * invdet;
-		if ((v < 0.f) || u + v > 1.f) return false;
-		t = Dot(e2, q) * invdet;
-		return t > 0.f;
+		if (Dot(c1, c2) > 0 && Dot(c1, c3) > 0)
+		{
+			return true;
+		}
 
+		return true;
 	}
 
-	bool rayIntersect1(const Ray& r, float& t, float& u, float& v) const
+	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
 		float denom = Dot(n, r.dir);
 		if (denom == 0) { return false; }
