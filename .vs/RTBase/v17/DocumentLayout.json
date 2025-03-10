@@ -3,6 +3,18 @@
   "WorkspaceRootPath": "C:\\Users\\u2100583\\source\\RTBaseNew\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Renderer.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Scene.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Scene.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Sampling.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Sampling.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Imaging.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
@@ -15,16 +27,8 @@
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\GamesEngineeringBase.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Lights.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Lights.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Materials.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Materials.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Scene.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Scene.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\SceneLoader.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
@@ -33,14 +37,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Core.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Core.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Renderer.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Geometry.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{8019DD42-8795-4DE4-B0BF-C6A4A4FDFB67}|RTBase\\RTBase.vcxproj|solutionrelative:RTBase\\Geometry.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -50,7 +46,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -67,6 +63,44 @@
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "Sampling.h",
+              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Sampling.h",
+              "RelativeDocumentMoniker": "RTBase\\Sampling.h",
+              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Sampling.h",
+              "RelativeToolTip": "RTBase\\Sampling.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADoAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-10T16:57:21.897Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Main.cpp",
+              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
+              "RelativeDocumentMoniker": "RTBase\\Main.cpp",
+              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
+              "RelativeToolTip": "RTBase\\Main.cpp",
+              "ViewState": "AgIAACMAAAAAAAAAAAAAAG4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-03-10T15:30:31.661Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Renderer.h",
+              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h",
+              "RelativeDocumentMoniker": "RTBase\\Renderer.h",
+              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h",
+              "RelativeToolTip": "RTBase\\Renderer.h",
+              "ViewState": "AgIAAHsAAAAAAAAAAIAwwHkAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-03-10T14:49:46.046Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
               "Title": "GamesEngineeringBase.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\GamesEngineeringBase.h",
               "RelativeDocumentMoniker": "RTBase\\GamesEngineeringBase.h",
@@ -78,32 +112,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "Imaging.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h",
               "RelativeDocumentMoniker": "RTBase\\Imaging.h",
               "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Imaging.h",
               "RelativeToolTip": "RTBase\\Imaging.h",
-              "ViewState": "AgIAAPAAAAAAAAAAAAAAAMoAAAAXAAAAAAAAAA==",
+              "ViewState": "AgIAAL4AAAAAAAAAAIAwwMgAAAAHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-03-09T16:49:26.691Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Lights.h",
-              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Lights.h",
-              "RelativeDocumentMoniker": "RTBase\\Lights.h",
-              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Lights.h",
-              "RelativeToolTip": "RTBase\\Lights.h",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-03-09T16:49:21.036Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "Materials.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Materials.h",
               "RelativeDocumentMoniker": "RTBase\\Materials.h",
@@ -115,19 +137,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 1,
               "Title": "Scene.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Scene.h",
               "RelativeDocumentMoniker": "RTBase\\Scene.h",
               "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Scene.h",
               "RelativeToolTip": "RTBase\\Scene.h",
-              "ViewState": "AgIAACEAAAAAAAAAAAAAADQAAAAOAAAAAAAAAA==",
+              "ViewState": "AgIAADAAAAAAAAAAAIAwwD0AAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-03-09T16:42:57.915Z"
+              "WhenOpened": "2025-03-09T16:42:57.915Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "SceneLoader.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\SceneLoader.h",
               "RelativeDocumentMoniker": "RTBase\\SceneLoader.h",
@@ -140,31 +163,6 @@
             {
               "$type": "Document",
               "DocumentIndex": 8,
-              "Title": "Renderer.h",
-              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h",
-              "RelativeDocumentMoniker": "RTBase\\Renderer.h",
-              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Renderer.h",
-              "RelativeToolTip": "RTBase\\Renderer.h",
-              "ViewState": "AgIAAI8AAAAAAAAAAAAkwJ4AAAACAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-03-09T16:46:30.695Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Main.cpp",
-              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
-              "RelativeDocumentMoniker": "RTBase\\Main.cpp",
-              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Main.cpp",
-              "RelativeToolTip": "RTBase\\Main.cpp",
-              "ViewState": "AgIAAFQAAAAAAAAAAAAAAGAAAAADAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-03-09T16:31:05.569Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
               "Title": "Core.h",
               "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Core.h",
               "RelativeDocumentMoniker": "RTBase\\Core.h",
@@ -173,18 +171,6 @@
               "ViewState": "AgIAAC0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-03-09T16:47:10.852Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "Geometry.h",
-              "DocumentMoniker": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Geometry.h",
-              "RelativeDocumentMoniker": "RTBase\\Geometry.h",
-              "ToolTip": "C:\\Users\\u2100583\\source\\RTBaseNew\\RTBase\\Geometry.h",
-              "RelativeToolTip": "RTBase\\Geometry.h",
-              "ViewState": "AgIAAFoAAAAAAAAAAAAAAAYAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-03-09T16:31:11.769Z"
             }
           ]
         }

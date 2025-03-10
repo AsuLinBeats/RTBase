@@ -6,6 +6,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define __STDC_LIB_EXT1__
 #include "stb_image_write.h"
+#include<string>
 
 // Stop warnings about buffer overruns if size is zero. Size should never be zero and if it is the code handles it.
 #pragma warning( disable : 6386)
@@ -135,22 +136,61 @@ public:
 	virtual int size() const = 0;
 };
 
+float Gaussians(float alpha, float x) {
+	return std::expf(-alpha * x * x);
+}
+
 class BoxFilter : public ImageFilter
 {
 public:
+
 	float filter(float x, float y) const
 	{
-		if (fabsf(x) < 0.5f && fabs(y) < 0.5f)
+		if (fabsf(x) <= 0.5f && fabs(y) <= 0.5f)
 		{
-			return 1.0f;
+			return 1;
 		}
 		return 0;
 	}
+
 	int size() const
 	{
 		return 0;
 	}
 };
+
+
+
+class GaussianFilter : public ImageFilter
+{
+public:
+	float radius;
+	float alpha;
+	GaussianFilter(float r, float a) {
+		radius = r;
+		alpha = a;
+	}
+
+	float filter(float x, float y) const
+	{
+		if (fabsf(x) <= 0.5f && fabs(y) <= 0.5f)
+		{
+
+			float gx = Gaussians(alpha, x);
+			float gy = Gaussians(alpha, y);
+
+			float filter = gx * gy;
+			return filter;
+		}
+		return 0;
+	}
+
+	int size() const
+	{
+		return std::ceil(radius) * 2;
+	}
+};
+
 
 class Film
 {
@@ -160,10 +200,7 @@ public:
 	unsigned int height;
 	int SPP;
 	ImageFilter* filter;
-	void splat(const float x, const float y, const Colour& L)
-	{
-		// Code to splat a smaple with colour L into the image plane using an ImageFilter
-	}
+
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
 		// Return a tonemapped pixel at coordinates x, y
@@ -184,9 +221,9 @@ public:
 		b *= formula;
 
 		// gamma correction
-		r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
 		// Return a tonemapped pixel at coordinates x, y
 
 	}
@@ -211,9 +248,9 @@ public:
 		b *= Lout;
 
 		// gamma correction
-		r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
+		//b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
 		// Return a tonemapped pixel at coordinates x, y
 
 	}
@@ -244,5 +281,28 @@ public:
 		}
 		stbi_write_hdr(filename.c_str(), width, height, 3, (float*)hdrpixels);
 		delete[] hdrpixels;
+	}
+
+	void splat(const float x, const float y, const Colour& L) {
+		float filterWeights[25]; // Storage to cache weights
+		unsigned int indices[25]; // Store indices to minimize computations
+		unsigned int used = 0;
+		float total = 0;
+		int size = filter->size();
+		for (int i = -size; i <= size; i++) {
+			for (int j = -size; j <= size; j++) {
+				int px = (int)x + j;
+				int py = (int)y + i;
+				if (px >= 0 && px < width && py >= 0 && py < height) {
+					indices[used] = (py * width) + px;
+					filterWeights[used] = filter->filter(j, i);
+					total += filterWeights[used];
+					used++;
+				}
+			}
+		}
+		for (int i = 0; i < used; i++) {
+			film[indices[i]] = film[indices[i]] + (L * filterWeights[i] / total);
+		}
 	}
 };
