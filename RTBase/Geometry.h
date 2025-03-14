@@ -3,6 +3,10 @@
 #include "Core.h"
 #include "Sampling.h"
 
+Vec3 operator*(const float& num, Vec3& vec) {
+	return Vec3(vec.x * num, vec.y * num, vec.z * num);
+}
+
 class Ray
 {
 public:
@@ -78,6 +82,7 @@ public:
 		// Get the centre of the triangle
 		return (vertices[0].p + vertices[1].p + vertices[2].p) / 3.0f;
 	}
+
 #if 0
 	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
@@ -163,8 +168,19 @@ public:
 	// Add code here
 	Vec3 sample(Sampler* sampler, float& pdf)
 	{
-		return Vec3(0, 0, 0);
+		// Use 2 random number to generate barycentric coordinates, and sample a point inside thrangle using it.
+		// pdf here is 1/ area, where area is given
+		float r1 = sampler->next();
+		float r2 = sampler->next();
+		// 求出重心坐标
+		float alpha = 1 - sqrt(r1);
+		float beta = r2 * sqrt(r1);
+		float gamma = 1 - alpha - beta;
+		pdf = 1 / area; // change pdf
+		return Vec3(alpha * vertices[0].p + beta * vertices[1].p + gamma * vertices[2].p);
 	}
+
+
 	Vec3 gNormal()
 	{
 		return (n * (Dot(vertices[0].normal, n) > 0 ? 1.0f : -1.0f));
