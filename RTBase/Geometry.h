@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "Sampling.h"
 
+#include<algorithm>
 class Ray
 {
 public:
@@ -215,7 +216,7 @@ public:
 
 		return false;
 	}
-	// Add code here
+	// Test if AABB collides with ray
 	bool rayAABB(const Ray& r)
 	{
 		float txmin = (min.x - r.o.x) / r.dir.x;
@@ -267,8 +268,9 @@ public:
 
 struct IntersectionData
 {
-	unsigned int ID;
-	float t;
+	unsigned int ID; // unique ID for intersection
+	float t; // ray parameter
+	// barycentric coordinate
 	float alpha;
 	float beta;
 	float gamma;
@@ -294,14 +296,99 @@ public:
 		r = NULL;
 		l = NULL;
 	}
+	~BVHNode() {
+		delete l;
+		delete r;
+	}
 	// Note there are several options for how to implement the build method. Update this as required
 	void build(std::vector<Triangle>& inputTriangles)
 	{
-		// Add BVH building code here
+		BVHNode* node = new BVHNode();
+		// Special case check
+		if (inputTriangles.empty()) return;
+		
+		// make bound box covers all triangle. (initialise the boundary box)
+		for (Triangle i : inputTriangles) {
+			bounds.extend(i.vertices[0].p);
+			bounds.extend(i.vertices[1].p);
+			bounds.extend(i.vertices[2].p);
+		}
+
+		// Set stop condition
+		const int MAX_TRIANGLE = 3;
+		if (inputTriangles.size() <= MAX_TRIANGLE) {
+			return;
+		}
+		// Always choose max axis so we are always dealing with maximum boundary box
+		// Calculate max axis via diagonal
+		// TODO SOME ERRORS HERE
+		Vec3 diag = bounds.max - bounds.min;
+		int axis = 0; // choose x axis by default
+		if (diag.x < diag.y) {
+			axis = 1;
+		}
+		if (diag[axis] < diag.z) {
+			axis = 2;
+		}
+
+		// Split triangles by median
+
+		// Prepare comparator for nth_element
+		auto comparator = [axis](const Triangle& a, const Triangle& b) {
+			return a.centre()[axis] < b.centre()[axis]; // used for nth_element
+		};
+		// Find median, we use size_t to make sure support for very large number
+		size_t mid = inputTriangles.size() / 2;  // split index, so if mid = 3, it means 0-1-2-3, which is fourth element
+
+		// Split vector into 2 parts
+		std::nth_element(inputTriangles.begin(), inputTriangles.begin()+mid, inputTriangles.end(),comparator); // make sure the mid position is correct
+		// nth_element only ensure the correct position of median
+		// After this step, the vector will be split to 2 parts
+		// save l/r result into separate vectors
+		std::vector<Triangle> leftTris(inputTriangles.begin(), inputTriangles.begin() + mid);
+		std::vector<Triangle> rightTris(inputTriangles.begin() + mid, inputTriangles.end());
+		
+		// recursive left/ right
+		l = new BVHNode();
+		l->build(leftTris);
+		r = new BVHNode();
+		r->build(rightTris);
+
 	}
 	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection)
 	{
-		// Add BVH Traversal code here
+		// Check if ray collides with boundary box at current level
+		if (!bounds.rayAABB(ray)) return;
+		// when in leaf node
+		if (!r && !l) {
+			float t, u, v;
+			for (const Triangle& tri : triangles) {
+				if (tri.rayIntersect(ray, t, u, v)) {
+					if (t > EPSILON && t < intersection.t) {
+						intersection.t = t;
+						intersection.ID = &tri - &triangles[0];
+						intersection.alpha = 1 - u - v;
+						intersection.beta = u;
+						intersection.gamma = v;
+					}
+				}
+			}
+		}
+
+		//  traverse closer nodes
+		float tLeft = (l) ? (l->bounds.rayAABB(ray) ? 0 : FLT_MAX) : FLT_MAX; // check if left subnode is available. and then give value based on its intersection status
+		float tRight = (r) ? r->bounds.rayAABB(ray) ? 0 : FLT_MAX : FLT_MAX;
+
+		
+		if (tLeft < tRight) {
+			if (l) l->traverse(ray, triangles, intersection);
+			if (r) r->traverse(ray, triangles, intersection);
+		}
+		else {
+			if (r) r->traverse(ray, triangles, intersection);
+			if (l) l->traverse(ray, triangles, intersection);
+		}
+
 	}
 	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles)
 	{
