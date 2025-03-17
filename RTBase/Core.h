@@ -125,6 +125,9 @@ public:
 		z = _z;
 		w = _w;
 	}
+	int operator[](const int v) const {
+		return coords[v];
+	}
 	Vec3 operator+(const Vec3 v) const
 	{
 		return Vec3(x + v.x, y + v.y, z + v.z);
