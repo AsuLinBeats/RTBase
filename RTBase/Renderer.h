@@ -81,67 +81,101 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+	void render() {
+		film->incrementSPP();
+		int tileSize = 16; // try 16*16 first
+		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
+		int numTileY = (film->height + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
+		int totalTiles = numTileX * numTileY; // total number of tiles	
 
-	const int tilesize = 16; // try 16*16 first
-#if 0
-	void renderTile() {
-		for (unsigned int tiley = 0; tiley < film->height; tiley += tilesize)
-		{
-			for (unsigned int tilex = 0; tilex < tilesize; tilex += tilesize)
-			{
-				int x_start = tilex;
-				int x_end = min(tilex + tilesize, film->width);
-				int y_start = tiley;
-				int y_end = min(tiley + tilesize, film->height);
+		auto renderTiles = [this, tileSize, numTileX, numTileY](int tileIndex, int threadIdx) {
+			// locate pixels based on tileSize
+			int tileY = tileIndex / numTileX; // get row of tile position
+			int tileX = tileIndex % numTileX; // get column of tile position
 
-				for (int y = y_start; y < y_end; y++) {
-					for (int x = x_start; x < x_end; x++) {
-						// raytracing happens here
-				// pick a point in pixel
-						float px = x + 0.5f;
-						float py = y + 0.5f;
-						Ray ray = scene->camera.generateRay(px, py);
-						Colour col = viewNormals(ray);
-						//Colour col = albedo(ray);
-						film->splat(px, py, col);
-						unsigned char r = (unsigned char)(col.r * 255);
-						unsigned char g = (unsigned char)(col.g * 255);
-						unsigned char b = (unsigned char)(col.b * 255);
-						canvas->draw(x, y, r, g, b);
-					}
+
+			unsigned int xStart = tileX * tileSize; // start of each tile
+			unsigned int xEnd = min(xStart + tileSize, film->width); // end of each tile(consider the last tile)
+			unsigned int yStart = tileY * tileSize;
+			unsigned int yEnd = min(yStart + tileSize, film->height);
+			//! Test code
+			std::cout << "Processing tile " << tileIndex
+				<< " [" << xStart << "," << yStart << "]-["
+				<< xEnd << "," << yEnd << "]\n";
+
+
+			// 获取当前线程对应的随机数生成器
+			MTRandom& sampler = samplers[threadIdx];
+			// render tiles
+			for (unsigned int y = yStart; y < yEnd; ++y) {
+				for (unsigned int x = xStart; x < xEnd; ++x) {
+					float px = x + 0.5f;
+					float py = y + 0.5f;
+					Ray ray = scene->camera.generateRay(px, py);
+
+				
+					// Colour col = pathTrace(ray, ... , sampler);
+
+					Colour col = viewNormals(ray);
+					film->splat(px, py, col);
+
+					unsigned char r = (unsigned char)(col.r * 255);
+					unsigned char g = (unsigned char)(col.g * 255);
+					unsigned char b = (unsigned char)(col.b * 255);
+					film->tonemap(x, y, r, g, b);
+					canvas->draw(x, y, r, g, b);
 				}
 			}
+			};
+
+		// create and launch threads
+		for (int i = 0; i < numProcs; ++i) {
+			threads[i] = new std::thread([=]() {
+				// we use = to ensure the exclusive resource for each thread
+				// Assign task for each thread, i: current thread, 
+				for (unsigned int tileIndex = i; tileIndex < totalTiles; tileIndex += numProcs) {
+					
+					renderTiles(tileIndex, i);
+				}
+				});
 		}
-	}
-#endif
 
-
-
-
-
-	void render()
-	{
-		film->incrementSPP();
-		for (unsigned int y = 0; y < film->height; y++)
-		{
-			for (unsigned int x = 0; x < film->width; x++)
-			{
-				// raytracing happens here
-				// pick a point in pixel
-				float px = x + 0.5f;
-				float py = y + 0.5f;
-				Ray ray = scene->camera.generateRay(px, py);
-				Colour col = viewNormals(ray);
-				//Colour col = albedo(ray);
-				film->splat(px, py, col);
-				unsigned char r = (unsigned char)(col.r * 255);
-				unsigned char g = (unsigned char)(col.g * 255);
-				unsigned char b = (unsigned char)(col.b * 255);
-				film->tonemap(x, y, r, g, b);
-				canvas->draw(x, y, r, g, b);
+		
+		for (int i = 0; i < numProcs; ++i) {
+			// check if threads exist and whether thread has already joined
+			if (threads[i] && threads[i]->joinable()) {
+				threads[i]->join();
+				// delete all threads after mission accomplished
+				delete threads[i];
+				// set thread pointer to nullptr to avoid wild pointer
+				threads[i] = nullptr;
 			}
 		}
 	}
+
+	//void render()
+	//{
+	//	film->incrementSPP();
+	//	for (unsigned int y = 0; y < film->height; y++)
+	//	{
+	//		for (unsigned int x = 0; x < film->width; x++)
+	//		{
+	//			// raytracing happens here
+	//			// pick a point in pixel
+	//			float px = x + 0.5f;
+	//			float py = y + 0.5f;
+	//			Ray ray = scene->camera.generateRay(px, py);
+	//			Colour col = viewNormals(ray);
+	//			//Colour col = albedo(ray);
+	//			film->splat(px, py, col);
+	//			unsigned char r = (unsigned char)(col.r * 255);
+	//			unsigned char g = (unsigned char)(col.g * 255);
+	//			unsigned char b = (unsigned char)(col.b * 255);
+	//			film->tonemap(x, y, r, g, b);
+	//			canvas->draw(x, y, r, g, b);
+	//		}
+	//	}
+	//}
 
 
 
