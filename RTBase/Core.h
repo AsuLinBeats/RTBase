@@ -561,3 +561,10 @@ public:
 		return (p < 0.0f) ? p + (2.0f * M_PI) : p;
 	}
 };
+
+template<typename T>
+T& use()
+{
+	static T t;
+	return t;
+}
