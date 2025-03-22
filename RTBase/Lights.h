@@ -8,7 +8,7 @@
 #pragma warning( disable : 4244)
 
 class Light
-{
+{	
 public:
 	virtual Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& emittedColour, float& pdf) = 0;
 	virtual Colour evaluate(const ShadingData& shadingData, const Vec3& wi) = 0;
@@ -25,6 +25,7 @@ public:
 	Colour emission;
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& emittedColour, float& pdf)
 	{
+		//! Area light!
 		emittedColour = emission;
 		return triangle->sample(sampler, pdf);
 	}
@@ -64,6 +65,7 @@ public:
 	}
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
+		//!Environment light
 		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		pdf = SamplingDistributions::uniformSpherePDF(wi);
 		reflectedColour = emission;

@@ -58,6 +58,10 @@ public:
 		float theta = acosf(sqrtf(r1));
 		return cosf(theta)/M_PI;
 	}
+	static float cosineHemispherePDF(const Vec3 wi)
+	{
+		return wi.z / M_PI;
+	}
 
 	static Vec3 uniformSampleSphere(float r1, float r2)
 	{

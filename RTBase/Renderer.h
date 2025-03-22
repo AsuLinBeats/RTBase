@@ -39,22 +39,109 @@ public:
 	}
 	Colour computeDirect(ShadingData shadingData, Sampler* sampler)
 	{
-		// Is surface is specular we cannot computing direct lighting
 		if (shadingData.bsdf->isPureSpecular() == true)
 		{
 			return Colour(0.0f, 0.0f, 0.0f);
 		}
-		// Compute direct lighting here
+		// Sample a light
+		float pmf;
+		Light* light = scene->sampleLight(sampler, pmf);
+		// Sample a point on the light
+		float pdf;
+		Colour emitted;
+		Vec3 p = light->sample(shadingData, sampler, emitted, pdf);
+		if (light->isArea())
+		{
+			// Calculate GTerm
+			Vec3 wi = p - shadingData.x;
+			float l = wi.lengthSq();
+			wi = wi.normalize();
+			float GTerm = (max(Dot(wi, shadingData.sNormal), 0.0f) * max(-Dot(wi, light->normal(shadingData, wi)), 0.0f)) / l;
+			if (GTerm > 0)
+			{
+				// Trace
+				if (scene->visible(shadingData.x, p))
+				{
+					// Shade
+					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
+				}
+			}
+		}
+		else
+		{
+			// Calculate GTerm
+			Vec3 wi = p;
+			float GTerm = max(Dot(wi, shadingData.sNormal), 0.0f);
+			if (GTerm > 0)
+			{
+				// Trace
+				if (scene->visible(shadingData.x, shadingData.x + (p * 10000.0f)))
+				{
+					// Shade
+					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
+				}
+			}
+		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
-	Colour pathTrace(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler)
+	Colour pathTrace(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
-		// Add pathtracer code here
-		return Colour(0.0f, 0.0f, 0.0f);
+		IntersectionData intersection = scene->traverse(r);
+		ShadingData shadingData = scene->calculateShadingData(intersection, r);
+		if (shadingData.t < FLT_MAX)
+		{
+			if (shadingData.bsdf->isLight())
+			{
+				if (canHitLight == true)
+				{
+					return pathThroughput * shadingData.bsdf->emit(shadingData, shadingData.wo);
+				}
+				else
+				{
+					return Colour(0.0f, 0.0f, 0.0f);
+				}
+			}
+			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
+			// if (depth > MAX_DEPTH)
+			if (depth > 5)
+			{
+				return direct;
+			}
+			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
+			if (sampler->next() < russianRouletteProbability)
+			{
+				pathThroughput = pathThroughput / russianRouletteProbability;
+			}
+			else
+			{
+				return direct;
+			}
+			Colour bsdf;
+			float pdf;
+			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+			pdf = SamplingDistributions::cosineHemispherePDF(wi);
+			wi = shadingData.frame.toWorld(wi);
+			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
+			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
+			r.init(shadingData.x + (wi * EPSILON), wi);
+			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
+		}
+		return scene->background->evaluate(shadingData, r.dir);
 	}
+
 	Colour direct(Ray& r, Sampler* sampler)
 	{
-		// Compute direct lighting for an image sampler here
+
+		IntersectionData intersection = scene->traverse(r);
+		ShadingData shadingData = scene->calculateShadingData(intersection, r);
+		if (shadingData.t < FLT_MAX)
+		{
+			if (shadingData.bsdf->isLight())
+			{
+				return shadingData.bsdf->emit(shadingData, shadingData.wo);
+			}
+			return computeDirect(shadingData, sampler);
+		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
 	Colour albedo(Ray& r)
@@ -67,7 +154,8 @@ public:
 			{
 				return shadingData.bsdf->emit(shadingData, shadingData.wo);
 			}
-			return shadingData.bsdf->evaluate(shadingData, Vec3(0, 1, 0));
+			//return shadingData.bsdf->evaluate(shadingData, Vec3(0, 1, 0));
+			return computeDirect(shadingData, samplers);
 		}
 		return scene->background->evaluate(shadingData, r.dir);
 	}
@@ -82,6 +170,7 @@ public:
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
 	void render() {
+
 		film->incrementSPP();
 		int tileSize = 16; // try 16*16 first
 		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
@@ -99,13 +188,13 @@ public:
 			unsigned int yStart = tileY * tileSize;
 			unsigned int yEnd = min(yStart + tileSize, film->height);
 			//! Test code
-			std::cout << "Processing tile " << tileIndex
-				<< " [" << xStart << "," << yStart << "]-["
-				<< xEnd << "," << yEnd << "]\n";
+			//std::cout << "Processing tile " << tileIndex
+			//	<< " [" << xStart << "," << yStart << "]-["
+			//	<< xEnd << "," << yEnd << "]\n";
 
 
 			// 获取当前线程对应的随机数生成器
-			MTRandom& sampler = samplers[threadIdx];
+			MTRandom* sampler = &samplers[threadIdx];
 			// render tiles
 			for (unsigned int y = yStart; y < yEnd; ++y) {
 				for (unsigned int x = xStart; x < xEnd; ++x) {
@@ -113,10 +202,11 @@ public:
 					float py = y + 0.5f;
 					Ray ray = scene->camera.generateRay(px, py);
 
-				
-					// Colour col = pathTrace(ray, ... , sampler);
-
-					Colour col = viewNormals(ray);
+					// Colour albedo = albedo(ray);
+					// Colour col = pathTrace(ray, albedo,depth,sampler);
+					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 4, sampler);
+					//Colour col = computeDirect()
+					//Colour col = direct(ray, sampler);
 					film->splat(px, py, col);
 
 					unsigned char r = (unsigned char)(col.r * 255);
@@ -166,6 +256,7 @@ public:
 	//			float py = y + 0.5f;
 	//			Ray ray = scene->camera.generateRay(px, py);
 	//			Colour col = viewNormals(ray);
+	// Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 0, sampler);
 	//			//Colour col = albedo(ray);
 	//			film->splat(px, py, col);
 	//			unsigned char r = (unsigned char)(col.r * 255);
@@ -191,4 +282,6 @@ public:
 	{
 		stbi_write_png(filename.c_str(), canvas->getWidth(), canvas->getHeight(), 3, canvas->getBackBuffer(), canvas->getWidth() * 3);
 	}
+
 };
+
