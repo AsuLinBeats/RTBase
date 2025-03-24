@@ -62,6 +62,13 @@ public:
 		c.b = b * colour.b;
 		return c;
 	}
+	//Colour operator/(const float& t) const {
+	//	Colour c;
+	//	c.r = r / t;
+	//	c.g = g / t;
+	//	c.b = b / t;
+	//	return c;
+	//}
 	Colour operator/(const Colour& colour) const
 	{
 		Colour c;

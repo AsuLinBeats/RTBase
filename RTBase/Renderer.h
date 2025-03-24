@@ -84,6 +84,7 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+	const int MAX_DEPTH = 5;
 	Colour pathTrace(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
 		IntersectionData intersection = scene->traverse(r);
@@ -102,12 +103,19 @@ public:
 				}
 			}
 			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
-			// if (depth > MAX_DEPTH)
-			if (depth > 5)
+			 //if (depth > MAX_DEPTH)
+			if (depth > 4)
 			{
 				return direct;
 			}
 			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
+
+			 //float russianRouletteProbability = (depth > 3) ? 0.9f : 1.0f;
+			 //if (sampler->next() > russianRouletteProbability) { // 终止条件反转
+				// return direct;
+			 //}
+			 //pathThroughput = pathThroughput / russianRouletteProbability;
+
 			if (sampler->next() < russianRouletteProbability)
 			{
 				pathThroughput = pathThroughput / russianRouletteProbability;
@@ -123,7 +131,9 @@ public:
 			wi = shadingData.frame.toWorld(wi);
 			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
-			r.init(shadingData.x + (wi * EPSILON), wi);
+			// r.init(shadingData.x + (wi * EPSILON), wi);
+			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
+			r.init(shadingData.x + offset, wi);
 			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
 		}
 		return scene->background->evaluate(shadingData, r.dir);
@@ -169,6 +179,8 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+
+
 	void render() {
 
 		film->incrementSPP();
@@ -202,11 +214,12 @@ public:
 					float py = y + 0.5f;
 					Ray ray = scene->camera.generateRay(px, py);
 
-					// Colour albedo = albedo(ray);
+					 
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
-					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 4, sampler);
+					// Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 5, sampler);
 					//Colour col = computeDirect()
-					//Colour col = direct(ray, sampler);
+					// Colour col = direct(ray, sampler);
+					Colour col = viewNormals(ray);
 					film->splat(px, py, col);
 
 					unsigned char r = (unsigned char)(col.r * 255);

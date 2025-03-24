@@ -140,6 +140,8 @@ float Gaussians(float alpha, float x) {
 	return std::expf(-alpha * x * x);
 }
 
+
+
 class BoxFilter : public ImageFilter
 {
 public:
@@ -191,6 +193,34 @@ public:
 	}
 };
 
+class Mitchell_Netravali : public ImageFilter {
+	// changable parameters
+	const float B = 1 / 3;
+	const float C = 1 / 3;
+
+	float h(float x) const {
+		if (fabsf(x) >= 0 && fabsf(x) < 1) {
+			return ((1 / 6) * ((12 - 9 * B - 6 * C) * std::pow(fabsf(x), 3) + (-18 + 12 * B + 6 * C) * std::pow(fabsf(x), 2) + (6 - 2 * B)));
+		}
+		if (fabsf(x) >= 1 && fabsf(x) < 2) {
+			return ((1 / 6) * ((-B - 6 * C) * std::pow(fabsf(x), 3) + (6 * B + 30 * C) * std::pow(fabsf(x), 2) + (-12 * B - 48 * C) * fabsf(x) + (8 * B + 24 * C)));
+		}
+		if (fabsf(x) >= 2) {
+			return 0;
+		}
+	}
+
+	float filter(float x, float y) const {
+		if (fabsf(x) <= 0.5f && fabs(y) <= 0.5f) {
+			float hx = h(x);
+			float hy = h(y);
+
+			float filter = hx * hy;
+			return filter;
+		}
+		return 0;
+	}
+};
 
 class Film
 {

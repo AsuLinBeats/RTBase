@@ -139,15 +139,32 @@ public:
 	{
 		// Add code here
 		// uniform sampling
-		float r1 = sampler->next();
-		pmf = 1.0f / lights.size();
-		for (auto light : lights) {
-			if (light->isArea()) {
-				pmf = light->totalIntegratedPower() / background->totalIntegratedPower();
-			}
-		}
-		return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
 
+		//float r1 = sampler->next();
+		//pmf = 1.0f / lights.size();
+		//for (auto light : lights) {
+		//	if (light->isArea()) {
+		//		pmf = light->totalIntegratedPower() / background->totalIntegratedPower();
+		//	}
+		//}
+		//return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
+
+		// TODO BUG LOCATED:
+		float totalPower = 0;
+		for (Light* light : lights) {
+			totalPower += light->totalIntegratedPower();
+		}
+
+		float selectProb = sampler->next();
+		float accum = 0;
+		for (Light* light : lights) {
+			float lightProb = light->totalIntegratedPower() / totalPower;
+			if (selectProb < (accum + lightProb)) {
+				pmf = lightProb;
+				return light;
+			}
+			accum += lightProb;
+		}
 
 		
 	}
