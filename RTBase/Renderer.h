@@ -84,7 +84,7 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
-	const int MAX_DEPTH = 5;
+	const int MAX_DEPTH = 15;
 	Colour pathTrace(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
 		IntersectionData intersection = scene->traverse(r);
@@ -103,8 +103,8 @@ public:
 				}
 			}
 			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
-			 //if (depth > MAX_DEPTH)
-			if (depth > 4)
+			 if (depth > MAX_DEPTH)
+			// if (depth > 4)
 			{
 				return direct;
 			}
@@ -216,10 +216,10 @@ public:
 
 					 
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
-					// Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 5, sampler);
+					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 13, sampler);
 					//Colour col = computeDirect()
-					// Colour col = direct(ray, sampler);
-					Colour col = viewNormals(ray);
+					 // Colour col = direct(ray, sampler);
+					// Colour col = viewNormals(ray);
 					film->splat(px, py, col);
 
 					unsigned char r = (unsigned char)(col.r * 255);

@@ -1,22 +1,19 @@
 ﻿  Main.cpp
-C:\Users\Davi\source\RTBase\RTBase\Geometry.h(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,23): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\Davi\source\RTBase\RTBase\Imaging.h(296,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\Davi\source\RTBase\RTBase\Imaging.h(296,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(406,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\Davi\source\RTBase\RTBase\Imaging.h(304,21): warning C4018: '<': signed/unsigned mismatch
-  (compiling source file 'Main.cpp')
-  
-C:\Users\Davi\source\RTBase\RTBase\Renderer.h(239,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(239,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
   Generating code
-  18 of 1995 functions ( 0.9%) were compiled, the rest were copied from previous compilation.
-    1 functions were new in current compilation
-    78 functions had inline decision re-evaluated but remain unchanged
+  2 of 2007 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    16 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  RTBase.vcxproj -> C:\Users\Davi\source\RTBase\x64\Release\RTBase.exe
+  RTBase.vcxproj -> C:\Users\u2100583\source\RTBaseNew\x64\Release\RTBase.exe

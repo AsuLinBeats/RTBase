@@ -231,30 +231,102 @@ public:
 	int SPP;
 	ImageFilter* filter;
 
+	//void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
+	//{
+	//	// Return a tonemapped pixel at coordinates x, y
+	//	// Change values directly inside the function
+	//	//TODO: Implement a tonemapping operator
+
+	//	// get the pixel value
+	//	Colour pixel = film[(y * width) + x] * exposure / (float)SPP; // film is an 1d array, so we need to calculate the index
+	//	// get luminance
+	//	float L = 0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b;
+	//	double temp = 1 / 2.2f;
+	//	float formula = std::pow((L / 1 + L), temp);
+
+
+	//	// reinhard Global
+	//	r *= formula;
+	//	g *= formula;
+	//	b *= formula;
+
+	//	// gamma correction
+	//	//r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
+	//	//g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
+	//	//b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
+	//	// Return a tonemapped pixel at coordinates x, y
+
+	//}
+
+
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
+
 	{
-		// Return a tonemapped pixel at coordinates x, y
-		// Change values directly inside the function
-		//TODO: Implement a tonemapping operator
 
-		// get the pixel value
-		Colour pixel = film[(y * width) + x] * exposure / (float)SPP; // film is an 1d array, so we need to calculate the index
-		// get luminance
-		float L = 0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b;
-		double temp = 1 / 2.2f;
-		float formula = std::pow((L / 1 + L), temp);
+		// Filmic Tone Mapping 参数（可根据需求调整）
+
+		const float A = 0.22f;
+
+		const float B = 0.30f;
+
+		const float C = 0.10f;
+
+		const float D = 0.20f;
+
+		const float E = 0.01f;
+
+		const float F = 0.30f;
+
+		// 计算索引
+
+		int index = y * width + x;
+
+		// 读取 HDR 颜色值（假设 Colour 结构体有 r, g, b 分量）
+
+		Colour hdrColor = film[index] / (float)SPP;  // 归一化
 
 
-		// reinhard Global
-		r *= formula;
-		g *= formula;
-		b *= formula;
+		// 1? 先应用曝光调整
 
-		// gamma correction
-		//r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		//g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		//b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
-		// Return a tonemapped pixel at coordinates x, y
+		float r_hdr = hdrColor.r * exposure;
+
+		float g_hdr = hdrColor.g * exposure;
+
+		float b_hdr = hdrColor.b * exposure;
+
+		// 2? Filmic Tone Mapping 公式
+
+		auto filmic = [&](float x) -> float {
+
+			float numerator = (x * (A * x + C * B) + D * E);
+
+			float denominator = (x * (A * x + B) + D * F);
+
+			return (numerator / denominator) - (E / F);
+
+			};
+
+		float r_mapped = filmic(r_hdr);
+
+		float g_mapped = filmic(g_hdr);
+
+		float b_mapped = filmic(b_hdr);
+
+		// 3? Gamma 校正（通常 gamma = 2.2）
+
+		float gamma = 1.0f / 2.2f;
+
+		r_mapped = powf(r_mapped, gamma);
+
+		g_mapped = powf(g_mapped, gamma);
+
+		b_mapped = powf(b_mapped, gamma);
+
+		r = static_cast<unsigned char>((r_mapped * 255.0f > 255.0f) ? 255.0f : ((r_mapped * 255.0f < 0.0f) ? 0.0f : r_mapped * 255.0f));
+
+		g = static_cast<unsigned char>((g_mapped * 255.0f > 255.0f) ? 255.0f : ((g_mapped * 255.0f < 0.0f) ? 0.0f : g_mapped * 255.0f));
+
+		b = static_cast<unsigned char>((b_mapped * 255.0f > 255.0f) ? 255.0f : ((b_mapped * 255.0f < 0.0f) ? 0.0f : b_mapped * 255.0f));
 
 	}
 

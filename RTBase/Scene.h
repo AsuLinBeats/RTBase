@@ -140,34 +140,28 @@ public:
 		// Add code here
 		// uniform sampling
 
-		//float r1 = sampler->next();
-		//pmf = 1.0f / lights.size();
-		//for (auto light : lights) {
-		//	if (light->isArea()) {
-		//		pmf = light->totalIntegratedPower() / background->totalIntegratedPower();
-		//	}
+		float r = sampler->next();
+		pmf = 1.0f / (float)lights.size();
+		return lights[floor(r * lights.size())];
+
+		//// TODO BUG LOCATED:
+		//float totalPower = 0;
+		//for (Light* light : lights) {
+		//	totalPower += light->totalIntegratedPower();
 		//}
-		//return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
 
-		// TODO BUG LOCATED:
-		float totalPower = 0;
-		for (Light* light : lights) {
-			totalPower += light->totalIntegratedPower();
-		}
-
-		float selectProb = sampler->next();
-		float accum = 0;
-		for (Light* light : lights) {
-			float lightProb = light->totalIntegratedPower() / totalPower;
-			if (selectProb < (accum + lightProb)) {
-				pmf = lightProb;
-				return light;
-			}
-			accum += lightProb;
-		}
-
-		
+		//float selectProb = sampler->next();
+		//float accum = 0;
+		//for (Light* light : lights) {
+		//	float lightProb = light->totalIntegratedPower() / totalPower;
+		//	if (selectProb < (accum + lightProb)) {
+		//		pmf = lightProb;
+		//		return light;
+		//	}
+		//	accum += lightProb;
 	}
+		
+	
 
 	Light* sampleLight1(Sampler* sampler, float& pmf)
 	{
@@ -213,7 +207,7 @@ public:
 		ray.init(p1 + (dir * EPSILON), dir);
 
 
-		for (int i = 0; i < triangles.size(); i++)
+		/*for (int i = 0; i < triangles.size(); i++)
 		{
 			float t;
 			float u;
@@ -226,8 +220,8 @@ public:
 				}
 			}
 		}
-		return true;
-		// return bvh->traverseVisible(ray, triangles, maxT);
+		return true;*/
+		return bvh->traverseVisible(ray, triangles, maxT);
 	}
 	Colour emit(Triangle* light, ShadingData shadingData, Vec3 wi)
 	{

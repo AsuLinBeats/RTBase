@@ -235,8 +235,12 @@ public:
 	// Test if AABB collides with ray
 	bool rayAABB(const Ray& r)
 	{
-		float txmin = (min.x - r.o.x) / r.dir.x;
-		float txmax = (max.x - r.o.x) / r.dir.x;
+		/*float txmin = (min.x - r.o.x) / r.dir.x;
+		float txmax = (max.x - r.o.x) / r.dir.x;*/
+
+		float txmin = (r.dir.x != 0) ? (min.x - r.o.x) / r.dir.x : (min.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
+		float txmax = (r.dir.x != 0) ? (max.x - r.o.x) / r.dir.x : (max.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
+
 		if (r.dir.x < 0) std::swap(txmin, txmax);
 
 		float tymin = (min.y - r.o.y) / r.dir.y;
@@ -247,8 +251,11 @@ public:
 		float tzmax = (max.z - r.o.z) / r.dir.z;
 		if (r.dir.z < 0) std::swap(tzmin, tzmax);
 
-		float tenter = std::max((txmin, tymin), tzmin);
-		float texit = std::min((txmax, tymax), tzmax);
+		//float tenter = std::max((txmin, tymin), tzmin);
+		//float texit = std::min((txmax, tymax), tzmax);
+
+		float tenter = std::max({ txmin, tymin, tzmin });
+		float texit = std::min({ txmax, tymax, tzmax });
 
 		if (tenter <= texit && texit > 0) {
 			return true;
@@ -256,6 +263,7 @@ public:
 
 		return false;
 	}
+
 	// Add code here
 	float area()
 	{
@@ -305,8 +313,8 @@ public:
 	BVHNode* l;
 	// This can store an offset and number of triangles in a global triangle list for example
 	// But you can store this however you want!
-	// unsigned int offset;
-	// unsigned char num;
+	unsigned int offset;
+	unsigned char num;
 	BVHNode()
 	{
 		r = NULL;
@@ -316,10 +324,13 @@ public:
 		delete l;
 		delete r;
 	}
+
+	const int MAX_TRIANGLE = 4;
+
 	// Note there are several options for how to implement the build method. Update this as required
 	void build(std::vector<Triangle>& inputTriangles)
 	{
-		BVHNode* node = new BVHNode();
+	//	BVHNode* node = new BVHNode();
 		// Special case check
 		if (inputTriangles.empty()) return;
 		
@@ -358,6 +369,9 @@ public:
 
 		// Split vector into 2 parts
 		std::nth_element(inputTriangles.begin(), inputTriangles.begin()+mid, inputTriangles.end(),comparator); // make sure the mid position is correct
+		
+		
+		
 		// nth_element only ensure the correct position of median
 		// After this step, the vector will be split to 2 parts
 		// save l/r result into separate vectors
@@ -406,6 +420,8 @@ public:
 		}
 
 	}
+
+
 	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles)
 	{
 		IntersectionData intersection;
