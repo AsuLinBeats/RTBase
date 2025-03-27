@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Core.h"
 #include "Sampling.h"
@@ -84,9 +84,10 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
-	const int MAX_DEPTH = 15;
+	const int MAX_DEPTH = 3; // generally need 3-5 bounces
 	Colour pathTrace(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
+		// depth: initial depth is 0 or 1
 		IntersectionData intersection = scene->traverse(r);
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
 		if (shadingData.t < FLT_MAX)
@@ -108,22 +109,24 @@ public:
 			{
 				return direct;
 			}
-			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
+			//float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
 
-			 //float russianRouletteProbability = (depth > 3) ? 0.9f : 1.0f;
-			 //if (sampler->next() > russianRouletteProbability) { // ÖÕÖ¹Ìõ¼þ·´×ª
-				// return direct;
-			 //}
-			 //pathThroughput = pathThroughput / russianRouletteProbability;
+			//if (sampler->next() < russianRouletteProbability)
+			//{
+			//	pathThroughput = pathThroughput / russianRouletteProbability;
+			//}
+			//else
+			//{
+			//	return direct;
+			//}
 
-			if (sampler->next() < russianRouletteProbability)
-			{
-				pathThroughput = pathThroughput / russianRouletteProbability;
-			}
-			else
-			{
-				return direct;
-			}
+			 if (depth > 3) {  // start RR after 3 bounces
+				 float surviveProb = 0.8f;
+				 if (sampler->next() > surviveProb) {
+					 return direct;
+				 }
+				 pathThroughput = pathThroughput / surviveProb;
+			 }
 			Colour bsdf;
 			float pdf;
 			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
@@ -205,7 +208,7 @@ public:
 			//	<< xEnd << "," << yEnd << "]\n";
 
 
-			// »ñÈ¡µ±Ç°Ïß³Ì¶ÔÓ¦µÄËæ»úÊýÉú³ÉÆ÷
+			// Â»Ã±ÃˆÂ¡ÂµÂ±Ã‡Â°ÃÃŸÂ³ÃŒÂ¶Ã”Ã“Â¦ÂµÃ„Ã‹Ã¦Â»ÃºÃŠÃ½Ã‰ÃºÂ³Ã‰Ã†Ã·
 			MTRandom* sampler = &samplers[threadIdx];
 			// render tiles
 			for (unsigned int y = yStart; y < yEnd; ++y) {
@@ -216,7 +219,7 @@ public:
 
 					 
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
-					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 13, sampler);
+					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 0, sampler);
 					//Colour col = computeDirect()
 					 // Colour col = direct(ray, sampler);
 					// Colour col = viewNormals(ray);

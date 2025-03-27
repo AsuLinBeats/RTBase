@@ -315,6 +315,9 @@ public:
 	// But you can store this however you want!
 	unsigned int offset;
 	unsigned char num;
+
+	unsigned int start;  // 三角形起始索引
+	unsigned int end;    // 三角形结束索引（不包括）
 	BVHNode()
 	{
 		r = NULL;
@@ -385,6 +388,43 @@ public:
 		r->build(rightTris);
 
 	}
+
+	void build1(std::vector<Triangle>& triangles, unsigned int start, unsigned int end) {
+		this->start = start;
+		this->end = end;
+
+		// 计算当前节点的包围盒
+		for (unsigned int i = start; i < end; ++i) {
+			bounds.extend(triangles[i].vertices[0].p);
+			bounds.extend(triangles[i].vertices[1].p);
+			bounds.extend(triangles[i].vertices[2].p);
+		}
+
+		// 终止条件：叶子节点
+		const int MAX_TRIANGLE = 4;
+		if (end - start <= MAX_TRIANGLE) {
+			return;
+		}
+
+		// 选择分割轴并分割
+		Vec3 diag = bounds.max - bounds.min;
+		int axis = (diag.x > diag.y && diag.x > diag.z) ? 0 : (diag.y > diag.z) ? 1 : 2;
+
+		// 按三角形中心排序
+		auto comparator = [axis](const Triangle& a, const Triangle& b) {
+			return a.centre()[axis] < b.centre()[axis];
+			};
+		unsigned int mid = start + (end - start) / 2;
+		std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end, comparator);
+
+		// 递归构建子节点
+		l = new BVHNode();
+		l->build1(triangles, start, mid);
+		r = new BVHNode();
+		r->build1(triangles, mid, end);
+	}
+
+
 	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection)
 	{
 		// Check if ray collides with boundary box at current level
@@ -419,6 +459,38 @@ public:
 			if (l) l->traverse(ray, triangles, intersection);
 		}
 
+	}
+
+	void traverse1(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection) {
+		if (!bounds.rayAABB(ray)) return;
+
+		// 叶子节点：检测所属三角形
+		if (!l && !r) {
+			for (unsigned int i = start; i < end; ++i) {
+				float t, u, v;
+				if (triangles[i].rayIntersect(ray, t, u, v)) {
+					if (t < intersection.t && t > EPSILON) {
+						intersection.t = t;
+						intersection.ID = i;
+						// 其他交点数据...
+					}
+				}
+			}
+			return;
+		}
+
+		// 内部节点：递归子节点
+		float tLeft = l ? l->bounds.rayAABB(ray) : FLT_MAX;
+		float tRight = r ? r->bounds.rayAABB(ray) : FLT_MAX;
+
+		if (tLeft < tRight) {
+			if (tLeft < intersection.t) l->traverse(ray, triangles, intersection);
+			if (tRight < intersection.t) r->traverse(ray, triangles, intersection);
+		}
+		else {
+			if (tRight < intersection.t) r->traverse(ray, triangles, intersection);
+			if (tLeft < intersection.t) l->traverse(ray, triangles, intersection);
+		}
 	}
 
 
