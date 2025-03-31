@@ -34,6 +34,7 @@ public:
 	Colour emission;
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& emittedColour, float& pdf)
 	{
+
 		//! Area light!
 		emittedColour = emission;
 		return triangle->sample(sampler, pdf);

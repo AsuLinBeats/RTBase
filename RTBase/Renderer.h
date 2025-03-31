@@ -130,7 +130,11 @@ public:
 			Colour bsdf;
 			float pdf;
 			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-			pdf = SamplingDistributions::cosineHemispherePDF(wi);
+			 //Colour indirect;
+			 //float pdf;
+			 //Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, indirect, pdf);
+			 
+			 pdf = SamplingDistributions::cosineHemispherePDF(wi);
 			wi = shadingData.frame.toWorld(wi);
 			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
@@ -139,7 +143,8 @@ public:
 			r.init(shadingData.x + offset, wi);
 			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
 		}
-		return scene->background->evaluate(shadingData, r.dir);
+		// return scene->background->evaluate(shadingData, r.dir);
+		return scene->background->evaluate(r.dir);
 	}
 
 	Colour direct(Ray& r, Sampler* sampler)
@@ -157,6 +162,7 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+
 	Colour albedo(Ray& r)
 	{
 		IntersectionData intersection = scene->traverse(r);
@@ -181,6 +187,54 @@ public:
 			return Colour(fabsf(shadingData.sNormal.x), fabsf(shadingData.sNormal.y), fabsf(shadingData.sNormal.z));
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
+	}
+
+
+	// light tracing
+	void connectToCamera(Vec3 p, Vec3 n, Colour col) {
+		// handle connections to camera
+		Camera& camera = scene->camera;
+		Vec3 cameraPos = camera.origin;
+		Vec3 cameraDir = camera.viewDirection;
+
+		// check if p is on camera
+		float u, v;
+		bool pOnCamera = scene->camera.projectOntoCamera(p, u, v);
+		// starting a light path
+		Vec3 wi = (p - cameraPos).normalize(); // direction
+		float cosTheta = max(Dot(n, wi), 0.f);
+		float cosThetaCam = max(Dot(cameraDir, -wi), 0.f);
+		float distanceSq = (cameraPos - p).lengthSq();
+		float g = (cosTheta * cosThetaCam) / distanceSq;
+
+		Colour contribution = col * g; //we currently do not conside the sensitivity of cam
+
+		//! Today's process.
+
+		if (pOnCamera) {
+			// compute geometry term between p and camera
+			Vec3 normal = scene->camera.viewDirection; // camera normal
+			Vec3 pos = scene->camera.origin; // camera position
+			Vec3 v = (pos - p).normalize(); // vector from p to camera
+			float Theta = acos(Dot(n, v));
+			float wi = 1 / scene->camera.Afilm * std::pow(cos(Theta),4);
+		}
+	}
+
+	void lightTrace(Sampler* sampler) {
+		// handles starting a light path
+
+		// sample a light source
+
+		// check if it is a area light
+
+		//create a ray from p in direction wi
+
+		// lightTracePath(r, Colour(1.f, 1.f, 1.f), Le, sampler);
+	}
+
+	void lightTracePath(Ray& r, Colour pathThroughput, Colour Le, Sampler* sampler) {
+
 	}
 
 
@@ -221,7 +275,7 @@ public:
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
 					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 0, sampler);
 					//Colour col = computeDirect()
-					 // Colour col = direct(ray, sampler);
+					// Colour col = direct(ray, sampler);
 					// Colour col = viewNormals(ray);
 					film->splat(px, py, col);
 
@@ -232,7 +286,7 @@ public:
 					canvas->draw(x, y, r, g, b);
 				}
 			}
-			};
+		};
 
 		// create and launch threads
 		for (int i = 0; i < numProcs; ++i) {

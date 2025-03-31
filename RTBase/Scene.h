@@ -69,6 +69,7 @@ public:
 
 	bool projectOntoCamera(const Vec3& p, float& x, float& y)
 	{
+		// view and projection matrix
 		Vec3 pview = cameraToView.mulPoint(p);
 		Vec3 pproj = projectionMatrix.mulPointAndPerspectiveDivide(pview);
 		x = (pproj.x + 1.0f) * 0.5f;
@@ -91,13 +92,20 @@ public:
 	std::vector<BSDF*> materials;
 	std::vector<Light*> lights;
 	Light* background = NULL;
-	BVHNode* bvh = NULL;
+	BVHNode* bvh;
 	Camera camera;
 	AABB bounds;
 	void build()
 	{
 		// Add BVH building code here
-
+		std::vector<Triangle> inputTriangles;
+		for (int i = 0; i < triangles.size(); i++)
+		{
+			inputTriangles.push_back(triangles[i]);
+		}
+		triangles.clear();
+		bvh = new BVHNode();
+		bvh->build(inputTriangles, triangles);
 		// Do not touch the code below this line!
 		// Build light list
 		for (int i = 0; i < triangles.size(); i++)
@@ -113,6 +121,11 @@ public:
 	}
 	IntersectionData traverse(const Ray& ray)
 	{
+		
+		if (bvh != nullptr) {
+			return bvh->traverse(ray, triangles);
+		}
+
 		IntersectionData intersection;
 		intersection.t = FLT_MAX;
 		for (int i = 0; i < triangles.size(); i++)
@@ -134,6 +147,8 @@ public:
 		}
 		return intersection;
 	}
+
+
 	// choose a light source from light list via uniform sampling
 	Light* sampleLight(Sampler* sampler, float& pmf)
 	{
@@ -164,18 +179,27 @@ public:
 		
 	
 
-	Light* sampleLight1(Sampler* sampler, float& pmf)
+	Light* sampleLightImportance(Sampler* sampler, float& pmf)
 	{
 //	TODO sampling light based on their power.
 
 		// Add code here
 // uniform sampling
-		float r1 = sampler->next();
-		pmf = 1.0f / lights.size();
+		//float r1 = sampler->next();
+		//pmf = 1.0f / lights.size();
 
-		return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
+		////return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
+
+		//std::vector<float> lightWeights;
+		//for (Light* light : lights) {
+		//	lightWeights.push_back(light->totalIntegratedPower()); 
+		//}
 
 
+		//// choose light based on weight
+		//int index = dist.sample(sampler->next());
+		//pmf = lightWeights[index] / dist.totalWeight();
+		//return lights[index];
 
 	}
 
@@ -208,6 +232,8 @@ public:
 		ray.init(p1 + (dir * EPSILON), dir);
 
 
+
+		return bvh->traverseVisible(ray, triangles, maxT);
 		/*for (int i = 0; i < triangles.size(); i++)
 		{
 			float t;
@@ -222,8 +248,8 @@ public:
 			}
 		}
 		return true;*/
-		return bvh->traverseVisible(ray, triangles, maxT);
 	}
+
 	Colour emit(Triangle* light, ShadingData shadingData, Vec3 wi)
 	{
 		return materials[light->materialIndex]->emit(shadingData, wi);
@@ -259,4 +285,8 @@ public:
 		}
 		return shadingData;
 	}
+
+
+	// Light tracing
+
 };

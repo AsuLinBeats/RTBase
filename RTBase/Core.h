@@ -13,6 +13,120 @@
 
 #define SQ(x) (x * x)
 
+
+class Vec3
+{
+public:
+	union {
+		struct {
+			float x;
+			float y;
+			float z;
+			float w;
+		};
+		float coords[4];
+	};
+	Vec3()
+	{
+		x = 0;
+		y = 0;
+		z = 0;
+		w = 1.0f;
+	}
+	Vec3(float _x, float _y, float _z)
+	{
+		x = _x;
+		y = _y;
+		z = _z;
+		w = 1.0f;
+	}
+	Vec3(float _x, float _y, float _z, float _w)
+	{
+		x = _x;
+		y = _y;
+		z = _z;
+		w = _w;
+	}
+
+	int operator[](const int v) const {
+		return coords[v];
+	}
+	Vec3 operator+(const Vec3 v) const
+	{
+		return Vec3(x + v.x, y + v.y, z + v.z);
+	}
+	Vec3 operator-(const Vec3 v) const
+	{
+		return Vec3(x - v.x, y - v.y, z - v.z);
+	}
+	Vec3 operator*(const float v) const
+	{
+		return Vec3(x * v, y * v, z * v);
+	}
+	Vec3 operator/(const float v) const
+	{
+		return Vec3(x / v, y / v, z / v, w / v);
+	}
+	Vec3 operator*(const Vec3 v) const
+	{
+		return Vec3(x * v.x, y * v.y, z * v.z);
+	}
+	Vec3 perspectiveDivide() const
+	{
+		return Vec3(x / w, y / w, z / w, 1.0f / w);
+	}
+	Vec3 operator-() const { return Vec3(-x, -y, -z); }
+	float lengthSq()
+	{
+		return ((x * x) + (y * y) + (z * z));
+	}
+	float lengthSq(Vec3& other)
+	{
+		return ((x - other.x * x-other.x) + (y - other.y * y - other.y) + (z-other.z * z-other.z));
+	}
+	float length()
+	{
+		return sqrtf((x * x) + (y * y) + (z * z));
+	}
+	Vec3 normalize() const
+	{
+		float l = 1.0f / sqrtf((x * x) + (y * y) + (z * z));
+		return Vec3(x * l, y * l, z * l);
+	}
+	float dot(Vec3 v) const
+	{
+		return ((x * v.x) + (y * v.y) + (z * v.z));
+	}
+	Vec3 cross(Vec3 v) const
+	{
+		return Vec3((y * v.z) - (z * v.y), (z * v.x) - (x * v.z), (x * v.y) - (y * v.x));
+	}
+
+
+};
+
+static float Dot(const Vec3 v1, const Vec3 v2)
+{
+	return ((v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z));
+}
+
+
+static Vec3 Cross(const Vec3& v1, const Vec3& v2)
+{
+	return Vec3((v1.y * v2.z) - (v1.z * v2.y), (v1.z * v2.x) - (v1.x * v2.z), (v1.x * v2.y) - (v1.y * v2.x));
+}
+
+static Vec3 Max(Vec3 a, Vec3 b)
+{
+	return Vec3(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z);
+}
+
+static Vec3 Min(Vec3 a, Vec3 b)
+{
+	return Vec3(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y, a.z < b.z ? a.z : b.z);
+}
+
+
 class Colour
 {
 public:
@@ -97,112 +211,15 @@ public:
 	{
 		return ((0.2126f * r) + (0.7152f * g) + (0.0722f * b));
 	}
-};
 
-class Vec3
-{
-public:
-	union {
-		struct {
-			float x;
-			float y;
-			float z;
-			float w;
-		};
-		float coords[4];
-	};
-	Vec3()
-	{
-		x = 0;
-		y = 0;
-		z = 0;
-		w = 1.0f;
-	}
-	Vec3(float _x, float _y, float _z)
-	{
-		x = _x;
-		y = _y;
-		z = _z;
-		w = 1.0f;
-	}
-	Vec3(float _x, float _y, float _z, float _w)
-	{
-		x = _x;
-		y = _y;
-		z = _z;
-		w = _w;
-	}
-	int operator[](const int v) const {
-		return coords[v];
-	}
-	Vec3 operator+(const Vec3 v) const
-	{
-		return Vec3(x + v.x, y + v.y, z + v.z);
-	}
-	Vec3 operator-(const Vec3 v) const
-	{
-		return Vec3(x - v.x, y - v.y, z - v.z);
-	}
-	Vec3 operator*(const float v) const
-	{
-		return Vec3(x * v, y * v, z * v);
-	}
-	Vec3 operator/(const float v) const
-	{
-		return Vec3(x / v, y / v, z / v, w / v);
-	}
-	Vec3 operator*(const Vec3 v) const
-	{
-		return Vec3(x * v.x, y * v.y, z * v.z);
-	}
-	Vec3 perspectiveDivide() const
-	{
-		return Vec3(x / w, y / w, z / w, 1.0f / w);
-	}
-	Vec3 operator-() const { return Vec3(-x, -y, -z); }
-	float lengthSq()
-	{
-		return ((x * x) + (y * y) + (z * z));
-	}
-	float length()
-	{
-		return sqrtf((x * x) + (y * y) + (z * z));
-	}
-	Vec3 normalize() const
-	{
-		float l = 1.0f / sqrtf((x * x) + (y * y) + (z * z));
-		return Vec3(x * l, y * l, z * l);
-	}
-	float dot(Vec3 v) const
-	{
-		return ((x * v.x) + (y * v.y) + (z * v.z));
-	}
-	Vec3 cross(Vec3 v) const
-	{
-		return Vec3((y * v.z) - (z * v.y), (z * v.x) - (x * v.z), (x * v.y) - (y * v.x));
+	Vec3 toVec3() {
+		Vec3 vec;
+		vec.x = r;
+		vec.y = g;
+		vec.z = b;
+		return vec;
 	}
 };
-
-static float Dot(const Vec3 v1, const Vec3 v2)
-{
-	return ((v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z));
-}
-
-
-static Vec3 Cross(const Vec3& v1, const Vec3& v2)
-{
-	return Vec3((v1.y * v2.z) - (v1.z * v2.y), (v1.z * v2.x) - (v1.x * v2.z), (v1.x * v2.y) - (v1.y * v2.x));
-}
-
-static Vec3 Max(Vec3 a, Vec3 b)
-{
-	return Vec3(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z);
-}
-
-static Vec3 Min(Vec3 a, Vec3 b)
-{
-	return Vec3(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y, a.z < b.z ? a.z : b.z);
-}
 
 struct Vertex
 {

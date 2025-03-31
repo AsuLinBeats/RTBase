@@ -2,12 +2,12 @@
 
 #include "Core.h"
 #include "Sampling.h"
+#include<algorithm>
 
 Vec3 operator*(const float& num, Vec3& vec) {
 	return Vec3(vec.x * num, vec.y * num, vec.z * num);
 }
 
-#include<algorithm>
 class Ray
 {
 public:
@@ -208,7 +208,7 @@ public:
 		min = Min(min, p);
 	}
 	// Add code here
-	bool rayAABB(const Ray& r, float& t)
+	bool rayAABB1(const Ray& r, float& t)
 	{
 
 		float txmin = (min.x - r.o.x) / r.dir.x;
@@ -223,44 +223,97 @@ public:
 		float tzmax = (max.z - r.o.z) / r.dir.z;
 		if (r.dir.z < 0) std::swap(tzmin, tzmax);
 
-		float tenter = std::max((txmin, tymin), tzmin);
-		float texit = std::min((txmax, tymax), tzmax);
-
-		if (tenter <= texit && texit > 0) {
-			return true;
-		}
-
-		return false;
-	}
-	// Test if AABB collides with ray
-	bool rayAABB(const Ray& r)
-	{
-		/*float txmin = (min.x - r.o.x) / r.dir.x;
-		float txmax = (max.x - r.o.x) / r.dir.x;*/
-
-		float txmin = (r.dir.x != 0) ? (min.x - r.o.x) / r.dir.x : (min.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
-		float txmax = (r.dir.x != 0) ? (max.x - r.o.x) / r.dir.x : (max.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
-
-		if (r.dir.x < 0) std::swap(txmin, txmax);
-
-		float tymin = (min.y - r.o.y) / r.dir.y;
-		float tymax = (max.y - r.o.y) / r.dir.y;
-		if (r.dir.y < 0) std::swap(tymin, tymax);
-
-		float tzmin = (min.z - r.o.z) / r.dir.z;
-		float tzmax = (max.z - r.o.z) / r.dir.z;
-		if (r.dir.z < 0) std::swap(tzmin, tzmax);
-
-		//float tenter = std::max((txmin, tymin), tzmin);
-		//float texit = std::min((txmax, tymax), tzmax);
-
+		// 使用初始化列表计算最大和最小值
 		float tenter = std::max({ txmin, tymin, tzmin });
 		float texit = std::min({ txmax, tymax, tzmax });
 
 		if (tenter <= texit && texit > 0) {
+			t = tenter; // 更新最近的交点距离
 			return true;
 		}
+		return false;
+	}
 
+	// Test if AABB collides with ray
+	//bool rayAABB(const Ray& r)
+	//{
+	//	float txmin = (r.dir.x != 0) ? (min.x - r.o.x) / r.dir.x : (min.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
+	//	float txmax = (r.dir.x != 0) ? (max.x - r.o.x) / r.dir.x : (max.x >= r.o.x) ? FLT_MAX : -FLT_MAX;
+	//	if (r.dir.x < 0) std::swap(txmin, txmax);
+
+	//	// Y轴处理（新增零方向保护）
+	//	float tymin = (r.dir.y != 0) ? (min.y - r.o.y) / r.dir.y : (min.y >= r.o.y) ? FLT_MAX : -FLT_MAX;
+	//	float tymax = (r.dir.y != 0) ? (max.y - r.o.y) / r.dir.y : (max.y >= r.o.y) ? FLT_MAX : -FLT_MAX;
+	//	if (r.dir.y < 0) std::swap(tymin, tymax);
+
+	//	// Z轴处理（新增零方向保护）
+	//	float tzmin = (r.dir.z != 0) ? (min.z - r.o.z) / r.dir.z : (min.z >= r.o.z) ? FLT_MAX : -FLT_MAX;
+	//	float tzmax = (r.dir.z != 0) ? (max.z - r.o.z) / r.dir.z : (max.z >= r.o.z) ? FLT_MAX : -FLT_MAX;
+	//	if (r.dir.z < 0) std::swap(tzmin, tzmax);
+
+	//	// 计算进入和退出时间
+	//	float tenter = std::max({ txmin, tymin, tzmin });
+	//	float texit = std::min({ txmax, tymax, tzmax });
+
+	//	return (tenter <= texit && texit > 0);
+	//}
+	bool rayAABB(const Ray& r) const {
+		float tmin = 0.0f;
+		float tmax = FLT_MAX;
+
+		for (int i = 0; i < 3; ++i) {
+			if (fabs(r.dir[i]) < 1e-6) { // 精确处理轴对齐情况
+				if (r.o[i] < min[i] || r.o[i] > max[i])
+					return false;
+				continue;
+			}
+
+			float invD = 1.0f / r.dir[i];
+			float t0 = (min[i] - r.o[i]) * invD;
+			float t1 = (max[i] - r.o[i]) * invD;
+
+			if (invD < 0.0f)
+				std::swap(t0, t1);
+
+			tmin = fmax(t0, tmin);
+			tmax = fmin(t1, tmax);
+
+			if (tmin > tmax)
+				return false;
+		}
+		return tmin < tmax && tmax >= 0.0f;
+	}
+	// 修改后的AABB相交检测
+	bool rayAABB(const Ray& r, float& t)
+	{
+		if (min.x > max.x || min.y > max.y || min.z > max.z) return false;
+
+		// 处理方向分量为零时的情况
+		auto safeDivide = [](float numerator, float denominator) -> float {
+			if (denominator == 0) return (numerator >= 0) ? FLT_MAX : -FLT_MAX;
+			return numerator / denominator;
+			};
+
+		float txmin = safeDivide(min.x - r.o.x, r.dir.x);
+		float txmax = safeDivide(max.x - r.o.x, r.dir.x);
+		if (r.dir.x < 0) std::swap(txmin, txmax);
+
+		float tymin = safeDivide(min.y - r.o.y, r.dir.y);
+		float tymax = safeDivide(max.y - r.o.y, r.dir.y);
+		if (r.dir.y < 0) std::swap(tymin, tymax);
+
+		float tzmin = safeDivide(min.z - r.o.z, r.dir.z);
+		float tzmax = safeDivide(max.z - r.o.z, r.dir.z);
+		if (r.dir.z < 0) std::swap(tzmin, tzmax);
+
+
+		float tenter = std::max({ txmin, tymin, tzmin });
+		float texit = std::min({ txmax, tymax, tzmax });
+
+		if (tenter <= texit && texit >= 0) {
+			t = tenter;
+			return true;
+		}
 		return false;
 	}
 
@@ -304,196 +357,269 @@ struct IntersectionData
 #define TRAVERSE_COST 1.0f
 #define TRIANGLE_COST 2.0f
 #define BUILD_BINS 32
-
 class BVHNode
 {
 public:
 	AABB bounds;
 	BVHNode* r;
 	BVHNode* l;
-	// This can store an offset and number of triangles in a global triangle list for example
-	// But you can store this however you want!
-	unsigned int offset;
-	unsigned char num;
+	unsigned int offset;  // 三角形列表中的起始索引
+	unsigned char num;    // 该节点包含的三角形数量
+	bool isLeaf;         // 是否是叶子节点
 
-	unsigned int start;  // 三角形起始索引
-	unsigned int end;    // 三角形结束索引（不包括）
 	BVHNode()
 	{
 		r = NULL;
 		l = NULL;
-	}
-	~BVHNode() {
-		delete l;
-		delete r;
+		offset = 0;
+		num = 0;
+		isLeaf = false;
 	}
 
-	const int MAX_TRIANGLE = 4;
-
-	// Note there are several options for how to implement the build method. Update this as required
-	void build(std::vector<Triangle>& inputTriangles)
+	~BVHNode()
 	{
-	//	BVHNode* node = new BVHNode();
-		// Special case check
-		if (inputTriangles.empty()) return;
-		
-		// make bound box covers all triangle. (initialise the boundary box)
-		for (Triangle i : inputTriangles) {
-			bounds.extend(i.vertices[0].p);
-			bounds.extend(i.vertices[1].p);
-			bounds.extend(i.vertices[2].p);
-		}
-
-		// Set stop condition
-		const int MAX_TRIANGLE = 3;
-		if (inputTriangles.size() <= MAX_TRIANGLE) {
-			return;
-		}
-		// Always choose max axis so we are always dealing with maximum boundary box
-		// Calculate max axis via diagonal
-		// TODO SOME ERRORS HERE
-		Vec3 diag = bounds.max - bounds.min;
-		int axis = 0; // choose x axis by default
-		if (diag.x < diag.y) {
-			axis = 1;
-		}
-		if (diag[axis] < diag.z) {
-			axis = 2;
-		}
-
-		// Split triangles by median
-
-		// Prepare comparator for nth_element
-		auto comparator = [axis](const Triangle& a, const Triangle& b) {
-			return a.centre()[axis] < b.centre()[axis]; // used for nth_element
-		};
-		// Find median, we use size_t to make sure support for very large number
-		size_t mid = inputTriangles.size() / 2;  // split index, so if mid = 3, it means 0-1-2-3, which is fourth element
-
-		// Split vector into 2 parts
-		std::nth_element(inputTriangles.begin(), inputTriangles.begin()+mid, inputTriangles.end(),comparator); // make sure the mid position is correct
-		
-		
-		
-		// nth_element only ensure the correct position of median
-		// After this step, the vector will be split to 2 parts
-		// save l/r result into separate vectors
-		std::vector<Triangle> leftTris(inputTriangles.begin(), inputTriangles.begin() + mid);
-		std::vector<Triangle> rightTris(inputTriangles.begin() + mid, inputTriangles.end());
-		
-		// recursive left/ right
-		l = new BVHNode();
-		l->build(leftTris);
-		r = new BVHNode();
-		r->build(rightTris);
-
+		if (r) delete r;
+		if (l) delete l;
 	}
+#if 0
+	// Note there are several options for how to implement the build method. Update this as required
+	void build(std::vector<Triangle>& inputTriangles, std::vector<Triangle>& triangles)
+	{
+		// 如果是叶子节点
+		if (inputTriangles.size() <= MAXNODE_TRIANGLES) {
+			isLeaf = true;
+			offset = (unsigned int)triangles.size();  // 设置三角形的起始索引
+			num = (unsigned char)inputTriangles.size();
 
-	void build1(std::vector<Triangle>& triangles, unsigned int start, unsigned int end) {
-		this->start = start;
-		this->end = end;
+			// 将三角形添加到全局三角形列表中
+			triangles.insert(triangles.end(), inputTriangles.begin(), inputTriangles.end());
 
-		// 计算当前节点的包围盒
-		for (unsigned int i = start; i < end; ++i) {
-			bounds.extend(triangles[i].vertices[0].p);
-			bounds.extend(triangles[i].vertices[1].p);
-			bounds.extend(triangles[i].vertices[2].p);
-		}
-
-		// 终止条件：叶子节点
-		const int MAX_TRIANGLE = 4;
-		if (end - start <= MAX_TRIANGLE) {
+			// 计算包围盒
+			bounds.reset();
+			for (const auto& triangle : inputTriangles) {
+				bounds.extend(triangle.vertices[0].p);
+				bounds.extend(triangle.vertices[1].p);
+				bounds.extend(triangle.vertices[2].p);
+			}
 			return;
 		}
 
-		// 选择分割轴并分割
-		Vec3 diag = bounds.max - bounds.min;
-		int axis = (diag.x > diag.y && diag.x > diag.z) ? 0 : (diag.y > diag.z) ? 1 : 2;
+		// 计算整个节点的包围盒
+		bounds.reset();
+		for (const auto& triangle : inputTriangles) {
+			bounds.extend(triangle.vertices[0].p);
+			bounds.extend(triangle.vertices[1].p);
+			bounds.extend(triangle.vertices[2].p);
+		}
+		// SAH
+		const int BUCKETS = 12;
+		const float C_trav = 1.0f;
+		const float C_intersect = 2.0f;
+		float minCost = FLT_MAX;
+		int bestAxis = -1;
+		float bestSplit = 0;
+		
 
-		// 按三角形中心排序
-		auto comparator = [axis](const Triangle& a, const Triangle& b) {
-			return a.centre()[axis] < b.centre()[axis];
-			};
-		unsigned int mid = start + (end - start) / 2;
-		std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end, comparator);
+		// TODO USE SAH TO BOOST THE PERFORMANCE
+		// 计算所有三角形的中心点
+		std::vector<Vec3> centers;
+		centers.reserve(inputTriangles.size());
+		for (const auto& triangle : inputTriangles) {
+			centers.push_back(triangle.centre());
+		}
 
-		// 递归构建子节点
+		// 选择最佳分割轴
+		Vec3 extent = bounds.max - bounds.min;
+		int axis = 0;
+		if (extent.y > extent.x && extent.y > extent.z) axis = 1;
+		else if (extent.z > extent.x && extent.z > extent.y) axis = 2;
+
+		// 计算分割点（使用中位数）
+		float split = 0.0f;
+		std::vector<float> centerValues(centers.size());
+		for (size_t i = 0; i < centers.size(); i++) {
+			centerValues[i] = (axis == 0) ? centers[i].x : ((axis == 1) ? centers[i].y : centers[i].z);
+		}
+		size_t mid = centerValues.size() / 2;
+		std::nth_element(centerValues.begin(), centerValues.begin() + mid, centerValues.end());
+		split = centerValues[mid];
+
+		// 分割三角形
+		std::vector<Triangle> leftTriangles, rightTriangles;
+		for (size_t i = 0; i < inputTriangles.size(); i++) {
+			float centerValue = (axis == 0) ? centers[i].x : ((axis == 1) ? centers[i].y : centers[i].z);
+			if (centerValue <= split) {
+				leftTriangles.push_back(inputTriangles[i]);
+			}
+			else {
+				rightTriangles.push_back(inputTriangles[i]);
+			}
+		}
+
+		// 处理特殊情况：如果一边为空，则平均分配
+		if (leftTriangles.empty() || rightTriangles.empty()) {
+			size_t mid = inputTriangles.size() / 2;
+			leftTriangles.assign(inputTriangles.begin(), inputTriangles.begin() + mid);
+			rightTriangles.assign(inputTriangles.begin() + mid, inputTriangles.end());
+		}
+
+		// 递归构建左右子树
 		l = new BVHNode();
-		l->build1(triangles, start, mid);
 		r = new BVHNode();
-		r->build1(triangles, mid, end);
+		l->build(leftTriangles, triangles);
+		r->build(rightTriangles, triangles);
 	}
+#endif
+	void build(std::vector<Triangle>& inputTriangles, std::vector<Triangle>& triangles)
+	{
+		// 如果是叶子节点
+		if (inputTriangles.size() <= MAXNODE_TRIANGLES) {
+			isLeaf = true;
+			offset = (unsigned int)triangles.size();  // 设置三角形的起始索引
+			num = (unsigned char)inputTriangles.size();
 
+			// 将三角形添加到全局三角形列表中
+			triangles.insert(triangles.end(), inputTriangles.begin(), inputTriangles.end());
+
+			// 计算包围盒
+			bounds.reset();
+			for (const auto& triangle : inputTriangles) {
+				bounds.extend(triangle.vertices[0].p);
+				bounds.extend(triangle.vertices[1].p);
+				bounds.extend(triangle.vertices[2].p);
+			}
+			return;
+		}
+
+		bounds.reset();
+		for (const auto& triangle : inputTriangles) {
+			bounds.extend(triangle.vertices[0].p);
+			bounds.extend(triangle.vertices[1].p);
+			bounds.extend(triangle.vertices[2].p);
+		}
+
+		// SAH参数（同原代码）
+		const int BUCKETS = 12;
+		const float C_trav = 1.0f;
+		const float C_intersect = 2.0f;
+		float minCost = FLT_MAX;
+		int bestAxis = -1;
+		float bestSplit = 0;
+
+		// 遍历三个轴（X/Y/Z）
+		for (int axis = 0; axis < 3; ++axis) {
+			// 改用索引避免指针失效
+			std::vector<std::pair<float, size_t>> sortedCenters;
+			sortedCenters.reserve(inputTriangles.size());
+			for (size_t i = 0; i < inputTriangles.size(); ++i) {
+				Vec3 center = inputTriangles[i].centre();
+				sortedCenters.emplace_back(center[axis], i);
+			}
+			std::sort(sortedCenters.begin(), sortedCenters.end());
+
+			// 为每个桶计算候选分割点
+			for (int b = 1; b < BUCKETS; ++b) {
+				size_t splitIndex = (b * sortedCenters.size()) / BUCKETS;
+				if (splitIndex == 0 || splitIndex >= sortedCenters.size()) continue;
+
+				// 分割点值
+				float splitValue = sortedCenters[splitIndex].first;
+
+				// 计算左右包围盒（初始化 leftBox 和 rightBox）
+				AABB leftBox, rightBox;
+				leftBox.reset();
+				rightBox.reset();
+
+				for (size_t i = 0; i < splitIndex; ++i) {
+					const Triangle& tri = inputTriangles[sortedCenters[i].second];
+					leftBox.extend(tri.vertices[0].p);
+					leftBox.extend(tri.vertices[1].p);
+					leftBox.extend(tri.vertices[2].p);
+				}
+				for (size_t i = splitIndex; i < sortedCenters.size(); ++i) {
+					const Triangle& tri = inputTriangles[sortedCenters[i].second];
+					rightBox.extend(tri.vertices[0].p);
+					rightBox.extend(tri.vertices[1].p);
+					rightBox.extend(tri.vertices[2].p);
+				}
+
+				// 计算SAH成本
+				float cost = C_trav +
+					(leftBox.area() * splitIndex + rightBox.area() * (sortedCenters.size() - splitIndex)) * C_intersect / bounds.area();
+
+				if (cost < minCost) {
+					minCost = cost;
+					bestAxis = axis;
+					bestSplit = splitValue;
+				}
+			}
+		}
+
+		// 按最佳轴和分割点划分三角形
+		std::vector<Triangle> leftTriangles, rightTriangles;
+		for (auto& tri : inputTriangles) {
+			float centerValue = tri.centre()[bestAxis];
+			if (centerValue <= bestSplit) {
+				leftTriangles.push_back(tri);
+			}
+			else {
+				rightTriangles.push_back(tri);
+			}
+		}
+
+		// 处理特殊情况：如果一边为空，则平均分配
+		if (leftTriangles.empty() || rightTriangles.empty()) {
+			size_t mid = inputTriangles.size() / 2;
+			leftTriangles.assign(inputTriangles.begin(), inputTriangles.begin() + mid);
+			rightTriangles.assign(inputTriangles.begin() + mid, inputTriangles.end());
+		}
+
+		// 递归构建左右子树前显式创建子节点
+		l = new BVHNode();
+		r = new BVHNode();
+		l->build(leftTriangles, triangles);
+		r->build(rightTriangles, triangles);
+	}
 
 	void traverse(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection)
 	{
-		// Check if ray collides with boundary box at current level
-		if (!bounds.rayAABB(ray)) return;
-		// when in leaf node
-		if (!r && !l) {
-			float t, u, v;
-			for (const Triangle& tri : triangles) {
-				if (tri.rayIntersect(ray, t, u, v)) {
-					if (t > EPSILON && t < intersection.t) {
+		// 首先检查射线是否与当前节点的包围盒相交
+		float boxT;
+		if (!bounds.rayAABB(ray, boxT) || boxT > intersection.t) {
+			return;
+		}
+
+		// 如果是叶子节点，测试与所有三角形的相交
+		if (isLeaf) {
+			for (unsigned int i = 0; i < num; i++) {
+				float t, u, v;
+				if (triangles[offset + i].rayIntersect(ray, t, u, v)) {
+					if (t > 0 && t < intersection.t) {  // 确保t为正且是最近的交点
 						intersection.t = t;
-						intersection.ID = &tri - &triangles[0];
-						intersection.alpha = 1 - u - v;
+						intersection.ID = offset + i;
+						intersection.alpha = 1.0f - (u + v);
 						intersection.beta = u;
 						intersection.gamma = v;
 					}
 				}
 			}
-		}
-
-		//  traverse closer nodes
-		float tLeft = (l) ? (l->bounds.rayAABB(ray) ? 0 : FLT_MAX) : FLT_MAX; // check if left subnode is available. and then give value based on its intersection status
-		float tRight = (r) ? r->bounds.rayAABB(ray) ? 0 : FLT_MAX : FLT_MAX;
-
-		
-		if (tLeft < tRight) {
-			if (l) l->traverse(ray, triangles, intersection);
-			if (r) r->traverse(ray, triangles, intersection);
-		}
-		else {
-			if (r) r->traverse(ray, triangles, intersection);
-			if (l) l->traverse(ray, triangles, intersection);
-		}
-
-	}
-
-	void traverse1(const Ray& ray, const std::vector<Triangle>& triangles, IntersectionData& intersection) {
-		if (!bounds.rayAABB(ray)) return;
-
-		// 叶子节点：检测所属三角形
-		if (!l && !r) {
-			for (unsigned int i = start; i < end; ++i) {
-				float t, u, v;
-				if (triangles[i].rayIntersect(ray, t, u, v)) {
-					if (t < intersection.t && t > EPSILON) {
-						intersection.t = t;
-						intersection.ID = i;
-						// 其他交点数据...
-					}
-				}
-			}
 			return;
 		}
 
-		// 内部节点：递归子节点
-		float tLeft = l ? l->bounds.rayAABB(ray) : FLT_MAX;
-		float tRight = r ? r->bounds.rayAABB(ray) : FLT_MAX;
+		// 递归遍历子节点，先遍历更近的子节点
+		float tLeft = FLT_MAX, tRight = FLT_MAX;
+		bool hitLeft = l ? l->bounds.rayAABB(ray, tLeft) : false;
+		bool hitRight = r ? r->bounds.rayAABB(ray, tRight) : false;
 
 		if (tLeft < tRight) {
-			if (tLeft < intersection.t) l->traverse(ray, triangles, intersection);
-			if (tRight < intersection.t) r->traverse(ray, triangles, intersection);
+			if (hitLeft) l->traverse(ray, triangles, intersection);
+			if (hitRight && tRight < intersection.t) r->traverse(ray, triangles, intersection);
 		}
 		else {
-			if (tRight < intersection.t) r->traverse(ray, triangles, intersection);
-			if (tLeft < intersection.t) l->traverse(ray, triangles, intersection);
+			if (hitRight) r->traverse(ray, triangles, intersection);
+			if (hitLeft && tLeft < intersection.t) l->traverse(ray, triangles, intersection);
 		}
 	}
-
-
 	IntersectionData traverse(const Ray& ray, const std::vector<Triangle>& triangles)
 	{
 		IntersectionData intersection;
@@ -503,7 +629,37 @@ public:
 	}
 	bool traverseVisible(const Ray& ray, const std::vector<Triangle>& triangles, const float maxT)
 	{
-		// Add visibility code here
+		// 首先检查射线是否与当前节点的包围盒相交
+		float t;
+		if (!bounds.rayAABB(ray, t))
+		{
+			return true;
+		}
+
+		// 如果是叶子节点,测试与所有三角形的相交
+		if (isLeaf)
+		{
+			for (unsigned int i = 0; i < num; i++)
+			{
+				float t, u, v;
+				if (triangles[offset + i].rayIntersect(ray, t, u, v))
+				{
+					if (t < maxT)
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		// 如果是内部节点,递归遍历左右子树
+		if (l && !l->traverseVisible(ray, triangles, maxT)) return false;
+		if (r && !r->traverseVisible(ray, triangles, maxT)) return false;
 		return true;
 	}
 };
+
+
+
+
