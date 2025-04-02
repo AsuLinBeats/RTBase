@@ -1,19 +1,22 @@
 ﻿  Main.cpp
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(392,23): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(392,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(406,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(400,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(281,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(90,23): warning C4390: ';': empty controlled statement found; is this the intent?
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(377,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
   Generating code
-  102 of 2169 functions ( 4.7%) were compiled, the rest were copied from previous compilation.
-    84 functions were new in current compilation
-    58 functions had inline decision re-evaluated but remain unchanged
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+C:\Users\u2100583\source\RTBaseNew\RTBase\Materials.h(476): warning C4715: 'GlassBSDF::evaluate': not all control paths return a value
+  All 2172 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
   RTBase.vcxproj -> C:\Users\u2100583\source\RTBaseNew\x64\Release\RTBase.exe

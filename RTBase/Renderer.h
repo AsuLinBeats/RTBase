@@ -84,7 +84,9 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
-	const int MAX_DEPTH = 3; // generally need 3-5 bounces
+	const int MAX_DEPTH = 12; // generally need 3-5 bounces
+
+
 	Colour pathTrace(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
 		// depth: initial depth is 0 or 1
@@ -109,37 +111,43 @@ public:
 			{
 				return direct;
 			}
-			//float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
 
-			//if (sampler->next() < russianRouletteProbability)
-			//{
-			//	pathThroughput = pathThroughput / russianRouletteProbability;
-			//}
-			//else
-			//{
-			//	return direct;
-			//}
 
-			 if (depth > 3) {  // start RR after 3 bounces
-				 float surviveProb = 0.8f;
-				 if (sampler->next() > surviveProb) {
-					 return direct;
-				 }
-				 pathThroughput = pathThroughput / surviveProb;
-			 }
+			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
+
+			if (sampler->next() < russianRouletteProbability)
+			{
+				pathThroughput = pathThroughput / russianRouletteProbability;
+			}
+			else
+			{
+				return direct;
+			}
+
+			 //if (depth > 3) {  // start RR after 3 bounces
+				// float surviveProb = 0.8f;
+				// if (sampler->next() > surviveProb) {
+				//	 return direct;
+				// }
+				// pathThroughput = pathThroughput / surviveProb;
+			 //}
+
 			Colour bsdf;
 			float pdf;
-			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-			 //Colour indirect;
+			// Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+			
 			 //float pdf;
-			 //Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, indirect, pdf);
+			 Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
 			 
-			 pdf = SamplingDistributions::cosineHemispherePDF(wi);
+			/*pdf = SamplingDistributions::cosineHemispherePDF(wi);
 			wi = shadingData.frame.toWorld(wi);
-			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
+			bsdf = shadingData.bsdf->evaluate(shadingData, wi);*/
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			// r.init(shadingData.x + (wi * EPSILON), wi);
 			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
+			// TODO TO FIX SHADOW ACNE, TRY A FIXED OFFSET
+			//Vec3 offset = wi ; // not work....
+			
 			r.init(shadingData.x + offset, wi);
 			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
 		}
@@ -162,6 +170,7 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
+
 
 	Colour albedo(Ray& r)
 	{
@@ -221,27 +230,97 @@ public:
 		}
 	}
 
+
+
 	void lightTrace(Sampler* sampler) {
 		// handles starting a light path
-
+		int depth = 10; // control bounce
+		float pmf;
 		// sample a light source
-
-		// check if it is a area light
-
+		Light* light = scene->sampleLight(sampler, pmf);
+		float pdfDirection = 0.f;
+		float pdfPosition = 0.f;
+		Vec3 p = light->samplePositionFromLight(sampler, pdfPosition);
+		Vec3 wi = light->sampleDirectionFromLight(sampler, pdfDirection);
+		Colour Le = light->evaluate(-wi);
+		Colour col = Le / pdfPosition; //! use pdfpos for now, WILL CHANGE LATER
+		float Letemp = Dot(Le.toVec3(), light->normal(wi));
+		Le = Le * Letemp;
+		connectToCamera(p, light->normal(wi), col); //! fix normal method to make it return a vector
 		//create a ray from p in direction wi
-
-		// lightTracePath(r, Colour(1.f, 1.f, 1.f), Le, sampler);
+		Ray r(p, wi); // create a ray
+		
+		lightTracePath(r, depth, Colour(1.f, 1.f, 1.f), Le, sampler);
 	}
 
-	void lightTracePath(Ray& r, Colour pathThroughput, Colour Le, Sampler* sampler) {
+	const int MAX_DEPTH_LIGHT = 10;
+
+	void lightTracePath(Ray& r, int depth, Colour pathThroughput, Colour Le, Sampler* sampler) {
+		// depth: initial depth is 0 or 1
+		IntersectionData intersection = scene->traverse(r);
+		ShadingData shadingData = scene->calculateShadingData(intersection, r);
+		if (shadingData.t < FLT_MAX)
+		{
+			// connectToCamera();
+			
+			if (depth > MAX_DEPTH_LIGHT)
+				// if (depth > 4)
+			{
+				return;
+			}
+
+
+			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
+
+			if (sampler->next() < russianRouletteProbability)
+			{
+				pathThroughput = pathThroughput / russianRouletteProbability;
+			}
+			else
+			{
+				return;
+			}
+
+			//if (depth > 3) {  // start RR after 3 bounces
+			   // float surviveProb = 0.8f;
+			   // if (sampler->next() > surviveProb) {
+			   //	 return direct;
+			   // }
+			   // pathThroughput = pathThroughput / surviveProb;
+			//}
+
+			Colour bsdf;
+			float pdf;
+			// Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+
+			 //float pdf;
+			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
+
+			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
+			// r.init(shadingData.x + (wi * EPSILON), wi);
+			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
+			// TODO TO FIX SHADOW ACNE, TRY A FIXED OFFSET
+
+			r.init(shadingData.x + offset, wi);
+			lightTracePath(r, depth + 1 ,pathThroughput, Le, sampler);
+		}
 
 	}
 
+
+	void instantRadiosity() {
+
+	}
+
+
+	void pathTraceMIS() {
+
+	}
 
 	void render() {
 
 		film->incrementSPP();
-		int tileSize = 16; // try 16*16 first
+		int tileSize = 20; // try 16*16 first
 		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
 		int numTileY = (film->height + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
 		int totalTiles = numTileX * numTileY; // total number of tiles	
@@ -264,6 +343,7 @@ public:
 
 			// »ñÈ¡µ±Ç°Ïß³Ì¶ÔÓ¦µÄËæ»úÊýÉú³ÉÆ÷
 			MTRandom* sampler = &samplers[threadIdx];
+			
 			// render tiles
 			for (unsigned int y = yStart; y < yEnd; ++y) {
 				for (unsigned int x = xStart; x < xEnd; ++x) {
@@ -274,6 +354,7 @@ public:
 					 
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
 					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 0, sampler);
+					// Colour col = lightTrace(sampler);
 					//Colour col = computeDirect()
 					// Colour col = direct(ray, sampler);
 					// Colour col = viewNormals(ray);

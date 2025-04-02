@@ -3,7 +3,8 @@
 #include "Core.h"
 #include "Imaging.h"
 #include "Sampling.h"
-#include<utility>
+// #include<utility>
+#define mathMax(a, b) ((a) > (b) ? (a) : (b))
 #pragma warning( disable : 4244)
 
 class BSDF;
@@ -51,15 +52,15 @@ public:
 		}
 		// calculate refreaction angle: thetat
 		float refractionRate = etaTransmitted / etaIncident;
-		float sinTheta = sqrt(1 - cosTheta * cosTheta); // sin thetai, incident angle
+		float sinTheta = mathMax(sqrt(1 - cosTheta * cosTheta),0); // sin thetai, incident angle
 		float sinThetat = refractionRate * sinTheta;
 
 		if (sinThetat >= 1.f) {
 			return 1.f;
 		}
 		float cosThetat = sqrt(1 - sinThetat * sinThetat);
-		float rs = (cosTheta - refractionRate * cosThetat) / (cosTheta + refractionRate * cosThetat);
-		float rp = (refractionRate * cosTheta - cosThetat) / (refractionRate * cosTheta + cosThetat);
+		float fParallel = (cosTheta - refractionRate * cosThetat) / (cosTheta + refractionRate * cosThetat);
+		float fPerp = (refractionRate * cosTheta - cosThetat) / (refractionRate * cosTheta + cosThetat);
 
 
 		//float cosThetat = cosf(iorExt * sqrt(1-cosTheta*cosTheta) / iorInt);
@@ -67,7 +68,7 @@ public:
 		//float fParallel = (cosTheta - ior * cosThetat) / (cosTheta + ior * cosThetat);
 		//float fPerp = (ior * cosTheta - cosThetat) / (ior * cosTheta + cosThetat);
 		//float f = (fParallel * fParallel + fPerp * fPerp) / 2;
-		return (rs*rs-rp*rp)/2;
+		return (fParallel * fParallel + fPerp * fPerp)/2;
 
 	}
 	static Colour fresnelConductor(float cosTheta, Colour ior, Colour k)
@@ -78,23 +79,40 @@ public:
 		float ccosTheta = cosTheta * cosTheta;
 		Colour fParallel = ((ior * ior + k * k) * cosTheta * cosTheta - (ior * 2.f*cosTheta) + Colour(csinTheta, csinTheta, csinTheta)) / ((ior * ior + k * k) * cosTheta * cosTheta + ior * cosTheta * 2 + Colour(csinTheta, csinTheta, csinTheta));
 		Colour fPerp = ((ior * ior + k * k) - ior * cosTheta * 2 +Colour(ccosTheta,ccosTheta,ccosTheta)/ ((ior * ior + k * k) + ior * cosTheta * 2 + Colour(ccosTheta, ccosTheta, ccosTheta)));
-		Colour f = fParallel + fPerp / 2;
-		return f;
+		return fParallel + fPerp / 2;
 	}
 	static float lambdaGGX(Vec3 wi, float alpha)
 	{
 		// Add code here
-		return 1.0f;
+		// for use with G(WO,WI)
+		// compute support function
+		float cosTheta = 1;
+		if (cosTheta <= 0.f);
+
+		float tanThetaSq = (1.f - cosTheta * cosTheta) / (cosTheta * cosTheta);
+		return 0.5f * (std::sqrt(1.f + alpha * alpha * tanThetaSq) - 1.f);
 	}
+
 	static float Gggx(Vec3 wi, Vec3 wo, float alpha)
 	{
 		// Add code here
-		return 1.0f;
+		float lambdawi = lambdaGGX(wi, alpha);
+		float lambdawo = lambdaGGX(wo, alpha);
+		// gv = 1/1+lambda(V)
+		return 1.f / (1.f + lambdawi) * 1.f / (1.f + lambdawo);
 	}
 	static float Dggx(Vec3 h, float alpha)
 	{
 		// Add code here
-		return 1.0f;
+		// distribution of ggx
+		float cosTheta = h.y;
+
+		// cases when surface is down (no contribution)
+		if (cosTheta <= 0.f) {
+			return 0.f;
+		}
+		float temp = cosTheta * cosTheta * (alpha * alpha - 1.f) + 1.f;
+		return (alpha * alpha) / (M_PI * temp * temp);
 	}
 };
 
@@ -134,22 +152,15 @@ public:
 	}
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
-		// Add correct sampling code here
-		//Vec3 wi = Vec3(0, 1, 0);
-
-		//pdf = 1.0f;
-
-		//reflectedColour = albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
-
-		//wi = shadingData.frame.toWorld(wi);
-
 		// Need to tanslate to local first.
 		Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next()); // use sample, which is local coordinate
-		pdf = wi.z / M_PI; // from formula : p = cos theta /pi
+		// Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, reflectedColour, pdf);
+		pdf = wi.z; // from formula : p = cos theta /pi
+		
+		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
 		// translate to world
 		Vec3 wiWorld = shadingData.frame.toWorld(wi); // ensure energy 
 
-		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv);
 		
 		return wiWorld;
 	}
@@ -197,40 +208,49 @@ public:
 		// Replace this with Mirror sampling code
 		Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
 		
-		Vec3 wiLocal = Vec3(-woLocal.x, -woLocal.y, woLocal.z);
+		Vec3 normal(0, 0, 1);
+		Vec3 wr = Vec3(-woLocal.x, -woLocal.y, woLocal.z);
+		
+		Vec3 wi = shadingData.frame.toWorld(wr); // w
+		// Vec3 wi = shadingData.frame.toWorld(wr);
 
-		Vec3 wiWorld = shadingData.frame.toWorld(wiLocal);
+		//Vec3 wiWorld = shadingData.frame.toWorld(wiLocal);
 
 		// Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-		pdf = 1.f; // mirror will reflect all light
-		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv);
+		pdf = 1.f; // mirror will reflect all light, Delta distribution
+		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv)/ wr.z;
 
-		return wiWorld;
+		return wi;
 	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
-		// Replace this with Mirror evaluation code
+		
 
-		// change to local
-		Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
-		Vec3 wiLocal = shadingData.frame.toLocal(wi);
-		Vec3 normal(0, 0, 1);
+		return Colour(0.f,0.f,0.f);
 
-		// 计算精确反射方向
-		Vec3 perfectReflectDir = -woLocal + 2 * woLocal.dot(normal) * normal;
-		perfectReflectDir = perfectReflectDir.normalize();
-		// wiLocal = wiLocal.normalize();
 
-		// 检查是否为精确反射方向（允许微小误差）
-		if (perfectReflectDir.lengthSq() < 1e-6f) {
-			return albedo->sample(shadingData.tu, shadingData.tv);
-		}
-		return Colour(0.0f, 0.0f, 0.0f); // 非反射方向返回0
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Mirror PDF
-		return 0.f;
+
+
+
+		//// 转换到局部坐标系
+		//Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo).normalize();
+		//Vec3 wiLocal = shadingData.frame.toLocal(wi).normalize();
+
+		//// 计算理论反射方向
+		//Vec3 normalLocal(0, 0, 1);
+		//Vec3 perfectReflectDir = -woLocal + 2 * woLocal.dot(normalLocal) * normalLocal;
+		//perfectReflectDir.normalize();
+
+		//// 检查是否匹配
+		//float distanceSq = (wiLocal - perfectReflectDir).lengthSq();
+		//const float epsilon = 1e-6f;
+		//return (distanceSq < epsilon) ? 1.0f : 0.0f;
+
+		return 0;
 	}
 	bool isPureSpecular()
 	{
@@ -268,6 +288,7 @@ public:
 		//Colour v = ShadingHelper::fresnelConductor();
 		//return v.toVec3();
 		Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
+		// TODO APPLY GGX HERE
 		Vec3 normal(0, 0, (woLocal.z>0 ? 1:-1));
 
 		Vec3 wiLocal = -woLocal + 2 * woLocal.dot(normal) * normal;
@@ -311,6 +332,7 @@ public:
 		// 返回菲涅尔项 * 基础颜色
 		return albedo->sample(shadingData.tu, shadingData.tv) * F;
 	}
+
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Conductor PDF
@@ -345,6 +367,7 @@ public:
 		intIOR = _intIOR;
 		extIOR = _extIOR;
 	}
+
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
 		// Replace this with Glass sampling code
@@ -367,10 +390,11 @@ public:
 		}
 		
 		// Fresnel-Schlick Appro
-		float f0 = std::pow((extIOR - intIOR) / (extIOR + intIOR), 2);
-		float cosTheta = std::abs(cos(woLocal.z));
-		float f = f0 + (1 - f0) * std::pow((1 - cosTheta), 5);
+		float cosTheta = std::abs(woLocal.dot(normal)); // 正确获取入射角余弦
+		float f0 = std::pow((intIOR - extIOR) / (intIOR + extIOR), 2); // IOR顺序修正
+		float f = f0 + (1 - f0) * std::pow(1 - cosTheta, 5);
 		float u = sampler->next();
+
 		// choose refreaction or reflection through probability
 		Vec3 wiLocal;
 		if (sampler->next() < f) { // check if reflect 
@@ -402,6 +426,7 @@ public:
 		return shadingData.frame.toWorld(wiLocal);
 
 	}
+
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Replace this with Glass evaluation code

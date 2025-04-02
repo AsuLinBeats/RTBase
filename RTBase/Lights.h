@@ -22,6 +22,7 @@ public:
 	virtual float PDF(const ShadingData& shadingData, const Vec3& wi) = 0;
 	virtual bool isArea() = 0;
 	virtual Vec3 normal(const ShadingData& shadingData, const Vec3& wi) = 0;
+	virtual Vec3 normal(const Vec3& wi) = 0; // add for normal() in light tracing
 	virtual float totalIntegratedPower() = 0;
 	virtual Vec3 samplePositionFromLight(Sampler* sampler, float& pdf) = 0;
 	virtual Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf) = 0;
@@ -55,10 +56,17 @@ public:
 	{
 		return true;
 	}
+
 	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
 	{
 		return triangle->gNormal();
 	}
+
+	Vec3 normal(const Vec3& wi)
+	{
+		return triangle->gNormal();
+	}
+
 	float totalIntegratedPower()
 	{
 		return (triangle->area * emission.Lum());
@@ -70,8 +78,11 @@ public:
 	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf)
 	{
 		// Add code to sample a direction from the light
-		Vec3 wi = Vec3(0, 0, 1);
-		pdf = 1.0f;
+		//Vec3 wi = Vec3(0, 0, 1);
+		//pdf = 1.0f;
+
+		Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
+		pdf = SamplingDistributions::cosineHemispherePDF(wi);
 		Frame frame;
 		frame.fromVector(triangle->gNormal());
 		return frame.toWorld(wi);
@@ -107,6 +118,10 @@ public:
 		return false;
 	}
 	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	{
+		return -wi;
+	}
+	Vec3 normal(const Vec3& wi)
 	{
 		return -wi;
 	}
@@ -146,6 +161,11 @@ public:
 		reflectedColour = evaluate(wi);
 		return wi;
 	}
+
+	// TODO CHANGE SAMPLE, WEIGHTED OR MIS.
+	Vec3 sampleNew(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf) {
+
+	}
 	Colour evaluate(const Vec3& wi)
 	{
 		float u = atan2f(wi.z, wi.x);
@@ -164,6 +184,10 @@ public:
 		return false;
 	}
 	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	{
+		return -wi;
+	}
+	Vec3 normal(const Vec3& wi)
 	{
 		return -wi;
 	}

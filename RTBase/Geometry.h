@@ -84,66 +84,6 @@ public:
 		return (vertices[0].p + vertices[1].p + vertices[2].p) / 3.0f;
 	}
 
-#if 0
-	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
-	{
-		// 两步走: 点在平面上, 点在三角形内部.
-		// calculate the distance between the ray origin and the plane
-		float t1 = (d - Dot(n, r.o)) / Dot(n, r.dir);
-		if (t1 < 0) {
-			return false;
-		}
-		// 知道t就可以计算交点
-		Vec3 ps = r.o + r.dir * t1; // 和平面的交点
-		Vec3 e3 = vertices[1].p - vertices[0].p;
-
-		// 计算交点是否在三角形内部
-		Vec3 ee1 = ps - vertices[0].p;
-		Vec3 ee2 = ps - vertices[1].p;
-		Vec3 ee3 = ps - vertices[2].p;
-
-		Vec3 c1 = ee1.cross(e3);
-		Vec3 c2 = ee2.cross(e1);
-		Vec3 c3 = ee3.cross(e2);
-
-		if (Dot(c1, c2) > 0 && Dot(c1, c3) > 0)
-		{
-			return true;
-		}
-
-		return true;
-	}
-#endif
-
-	bool rayIntersect1(const Ray& r, float& t, float& u, float& v) const
-	{
-		// 两步走: 点在平面上, 点在三角形内部.
-		// calculate the distance between the ray origin and the plane
-		float t1 = (d - Dot(n, r.o)) / Dot(n, r.dir);
-		if (t1 < 0) {
-			return false;
-		}
-		// 知道t就可以计算交点
-		Vec3 ps = r.o + r.dir * t1; // 和平面的交点
-		Vec3 e3 = vertices[1].p - vertices[0].p;
-
-		// 计算交点是否在三角形内部
-		Vec3 ee1 = ps - vertices[0].p;
-		Vec3 ee2 = ps - vertices[1].p;
-		Vec3 ee3 = ps - vertices[2].p;
-
-		Vec3 c1 = ee1.cross(e3);
-		Vec3 c2 = ee2.cross(e1);
-		Vec3 c3 = ee3.cross(e2);
-
-		if (Dot(c1, c2) > 0 && Dot(c1, c3) > 0)
-		{
-			return true;
-		}
-
-		return true;
-	}
-
 	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
 		float denom = Dot(n, r.dir);
@@ -157,6 +97,31 @@ public:
 		v = Dot(e2.cross(p - vertices[2].p), n) * invArea;
 		if (v < 0 || (u + v) > 1.0f) { return false; }
 		return true;
+
+		//const Vec3& v0 = vertices[0].p;
+		//const Vec3& v1 = vertices[1].p;
+		//const Vec3& v2 = vertices[2].p;
+
+		//Vec3 edge1 = v1 - v0;
+		//Vec3 edge2 = v2 - v0;
+		//Vec3 h = Cross(r.dir, edge2);
+		//float a = Dot(edge1, h);
+
+		//if (a > -1e-6f && a < 1e-6f) return false;
+
+		//float f = 1.0f / a;
+		//Vec3 s = r.o - v0;
+		//u = f * Dot(s, h);
+
+		//if (u < 0.0f || u > 1.0f) return false;
+
+		//Vec3 q = Cross(s, edge1);
+		//v = f * Dot(r.dir, q);
+
+		//if (v < 0.0f || u + v > 1.0f) return false;
+
+		//t = f * Dot(edge2, q);
+		//return t > 1e-6f;
 	}
 
 	void interpolateAttributes(const float alpha, const float beta, const float gamma, Vec3& interpolatedNormal, float& interpolatedU, float& interpolatedV) const
@@ -339,7 +304,30 @@ public:
 	// Add code here
 	bool rayIntersect(Ray& r, float& t)
 	{
-		return false;
+		Vec3 oc = r.o - centre;
+		float a = Dot(r.dir, r.dir);
+		float b = 2.0f * Dot(oc, r.dir);
+		float c = Dot(oc, oc) - radius * radius;
+		float delta = b * b - 4 * a * c;
+
+		// cases no interaction
+		if (delta < 0) {
+			return false;
+		}
+
+		float sqrtDelta = sqrt(delta);
+		float t0 = (-b - sqrtDelta) / (2 * a);
+		float t1 = (-b + sqrtDelta) / (2 * a);
+
+		// choose minumim value
+		if (t0 > 0) {
+			t = t0;
+		} else if (t1 > 0) { 
+			t = t1;
+		} else return false; // interaction is at negative dir
+
+		return true;
+		
 	}
 };
 
@@ -382,6 +370,7 @@ public:
 		if (l) delete l;
 	}
 #if 0
+	// Version without SAH
 	// Note there are several options for how to implement the build method. Update this as required
 	void build(std::vector<Triangle>& inputTriangles, std::vector<Triangle>& triangles)
 	{

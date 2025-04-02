@@ -263,20 +263,14 @@ public:
 
 	{
 
-		// Filmic Tone Mapping 参数（可根据需求调整）
+		// Filmic Tone Mapping 
 
 		const float A = 0.22f;
-
 		const float B = 0.30f;
-
 		const float C = 0.10f;
-
 		const float D = 0.20f;
-
 		const float E = 0.01f;
-
 		const float F = 0.30f;
-
 		// 计算索引
 
 		int index = y * width + x;

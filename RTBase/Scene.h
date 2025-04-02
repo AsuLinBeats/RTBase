@@ -61,7 +61,10 @@ public:
 		xprime = (xprime * 2.0f) - 1.0f;
 		yprime = (yprime * 2.0f) - 1.0f;
 		Vec3 dir(xprime, yprime, 1.0f);
-		dir = inverseProjectionMatrix.mulPoint(dir);
+
+		// dir = inverseProjectionMatrix.mulPoint(dir);
+		dir = inverseProjectionMatrix.mulPointAndPerspectiveDivide(dir);
+
 		dir = camera.mulVec(dir);
 		dir = dir.normalize();
 		return Ray(origin, dir);
@@ -122,11 +125,12 @@ public:
 	IntersectionData traverse(const Ray& ray)
 	{
 		
-		if (bvh != nullptr) {
-			return bvh->traverse(ray, triangles);
-		}
+		//if (bvh != nullptr) {
+		return bvh->traverse(ray, triangles);
+		//}
 
-		IntersectionData intersection;
+		//! if do not have bvh
+		/*IntersectionData intersection;
 		intersection.t = FLT_MAX;
 		for (int i = 0; i < triangles.size(); i++)
 		{
@@ -145,7 +149,7 @@ public:
 				}
 			}
 		}
-		return intersection;
+		return intersection;*/
 	}
 
 
@@ -231,23 +235,8 @@ public:
 		dir = dir.normalize();
 		ray.init(p1 + (dir * EPSILON), dir);
 
-
-
 		return bvh->traverseVisible(ray, triangles, maxT);
-		/*for (int i = 0; i < triangles.size(); i++)
-		{
-			float t;
-			float u;
-			float v;
-			if (triangles[i].rayIntersect(ray, t, u, v))
-			{
-				if (t < maxT)
-				{
-					return false;
-				}
-			}
-		}
-		return true;*/
+
 	}
 
 	Colour emit(Triangle* light, ShadingData shadingData, Vec3 wi)
@@ -285,8 +274,5 @@ public:
 		}
 		return shadingData;
 	}
-
-
-	// Light tracing
 
 };
