@@ -10,6 +10,7 @@
 #include "GamesEngineeringBase.h"
 #include <thread>
 #include <functional>
+#include<OpenImageDenoise/oidn.hpp>
 
 class RayTracer
 {
@@ -20,6 +21,8 @@ public:
 	MTRandom* samplers;
 	std::thread** threads;
 	int numProcs;
+	std::vector<VPL> VPLs; // store in a vector
+	
 	void init(Scene* _scene, GamesEngineeringBase::Window* _canvas)
 	{
 		scene = _scene;
@@ -124,13 +127,6 @@ public:
 				return direct;
 			}
 
-			 //if (depth > 3) {  // start RR after 3 bounces
-				// float surviveProb = 0.8f;
-				// if (sampler->next() > surviveProb) {
-				//	 return direct;
-				// }
-				// pathThroughput = pathThroughput / surviveProb;
-			 //}
 
 			Colour bsdf;
 			float pdf;
@@ -139,9 +135,7 @@ public:
 			 //float pdf;
 			 Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
 			 
-			/*pdf = SamplingDistributions::cosineHemispherePDF(wi);
-			wi = shadingData.frame.toWorld(wi);
-			bsdf = shadingData.bsdf->evaluate(shadingData, wi);*/
+		
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			// r.init(shadingData.x + (wi * EPSILON), wi);
 			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
@@ -198,7 +192,33 @@ public:
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
 
+	// VPL
+	void traceVPLs(Sampler* sampler, int N_VPLs) {
+		for (VPL& vpl : VPLs) { // 使用引用以修改原VPL对象
+			// 获取VPL的发射光强度vpl、概率质量函数和概率密度函数
+			float pmf;
+			float pdf = vpl.pdf;
+			Colour emitted = Colour(0.f,0.f,0.f); // Use fix number for now
 
+			
+			if (pdf <= 0.0f || N_VPLs <= 0) {
+				vpl.Le = Colour(0.0f,0.f,0.f);
+				continue;
+			}
+
+			// Le = emitted / (pmf * pdf * N_VPLs)
+			
+			vpl.Le = emitted / (pdf * static_cast<float>(N_VPLs));
+
+
+		}
+	}
+
+	void VPLTracePath(Ray& r, Colour pathThroughput, Colour Le, Sampler* sampler) {
+
+
+	}
+	// Instant radiosity
 	// light tracing
 	void connectToCamera(Vec3 p, Vec3 n, Colour col) {
 		// handle connections to camera
@@ -206,28 +226,28 @@ public:
 		Vec3 cameraPos = camera.origin;
 		Vec3 cameraDir = camera.viewDirection;
 
-		// check if p is on camera
+		// project scene to camera 
 		float u, v;
 		bool pOnCamera = scene->camera.projectOntoCamera(p, u, v);
+		// check if p is on camera
+		if (!pOnCamera) return;
 		// starting a light path
 		Vec3 wi = (p - cameraPos).normalize(); // direction
+
+
+
 		float cosTheta = max(Dot(n, wi), 0.f);
 		float cosThetaCam = max(Dot(cameraDir, -wi), 0.f);
 		float distanceSq = (cameraPos - p).lengthSq();
 		float g = (cosTheta * cosThetaCam) / distanceSq;
 
-		Colour contribution = col * g; //we currently do not conside the sensitivity of cam
+		float pixelSensitivity = std::pow(cosThetaCam, 4.0f);
+		// Colour contribution = col * g; //we currently do not conside the sensitivity of cam
 
-		//! Today's process.
-
-		if (pOnCamera) {
-			// compute geometry term between p and camera
-			Vec3 normal = scene->camera.viewDirection; // camera normal
-			Vec3 pos = scene->camera.origin; // camera position
-			Vec3 v = (pos - p).normalize(); // vector from p to camera
-			float Theta = acos(Dot(n, v));
-			float wi = 1 / scene->camera.Afilm * std::pow(cos(Theta),4);
-		}
+		Colour contribution = col * (cosTheta * cosThetaCam / distanceSq) * pixelSensitivity;
+		
+		// Impact film
+		
 	}
 
 
@@ -235,22 +255,28 @@ public:
 	void lightTrace(Sampler* sampler) {
 		// handles starting a light path
 		int depth = 10; // control bounce
-		float pmf;
+		float lightpdf;
 		// sample a light source
-		Light* light = scene->sampleLight(sampler, pmf);
+		Light* light = scene->sampleLight(sampler, lightpdf);
+		if (lightpdf == 0 || !light) { return; }
+
 		float pdfDirection = 0.f;
 		float pdfPosition = 0.f;
 		Vec3 p = light->samplePositionFromLight(sampler, pdfPosition);
 		Vec3 wi = light->sampleDirectionFromLight(sampler, pdfDirection);
-		Colour Le = light->evaluate(-wi);
-		Colour col = Le / pdfPosition; //! use pdfpos for now, WILL CHANGE LATER
-		float Letemp = Dot(Le.toVec3(), light->normal(wi));
-		Le = Le * Letemp;
-		connectToCamera(p, light->normal(wi), col); //! fix normal method to make it return a vector
-		//create a ray from p in direction wi
+
+
+		// Colour Le = light->evaluate(-wi);
+		Colour Le = Colour(1.f,1.f,1.f); // DEBUG ONLY
+		float cosThetaLight = Dot(p,wi);
+		Colour contribution = Le * cosThetaLight / (lightpdf * pdfPosition * pdfDirection);
+		connectToCamera(p, light->normal(wi), contribution); //! fix normal method to make it return a vector
+
+
+		////create a ray from p in direction wi
 		Ray r(p, wi); // create a ray
 		
-		lightTracePath(r, depth, Colour(1.f, 1.f, 1.f), Le, sampler);
+		lightTracePath(r, 1, Colour(1.f, 1.f, 1.f), Le, sampler);
 	}
 
 	const int MAX_DEPTH_LIGHT = 10;
@@ -259,16 +285,16 @@ public:
 		// depth: initial depth is 0 or 1
 		IntersectionData intersection = scene->traverse(r);
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
+
 		if (shadingData.t < FLT_MAX)
 		{
-			// connectToCamera();
 			
 			if (depth > MAX_DEPTH_LIGHT)
 				// if (depth > 4)
 			{
 				return;
 			}
-
+			connectToCamera(shadingData.x, shadingData.sNormal, pathThroughput*Le);
 
 			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
 
@@ -281,25 +307,20 @@ public:
 				return;
 			}
 
-			//if (depth > 3) {  // start RR after 3 bounces
-			   // float surviveProb = 0.8f;
-			   // if (sampler->next() > surviveProb) {
-			   //	 return direct;
-			   // }
-			   // pathThroughput = pathThroughput / surviveProb;
-			//}
-
 			Colour bsdf;
 			float pdf;
-			// Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-
+			//Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
 			 //float pdf;
 			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
+			float cosTheta = std::abs(Dot(shadingData.sNormal, wi));
 
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			// r.init(shadingData.x + (wi * EPSILON), wi);
 			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
 			// TODO TO FIX SHADOW ACNE, TRY A FIXED OFFSET
+
+			Vec3 wo = -r.dir; // 确保使用正确出射方向
+			
 
 			r.init(shadingData.x + offset, wi);
 			lightTracePath(r, depth + 1 ,pathThroughput, Le, sampler);
@@ -316,6 +337,67 @@ public:
 	void pathTraceMIS() {
 
 	}
+	void render1() {
+		//! LIGHT TRACING
+		film->incrementSPP();
+		int tileSize = 20; // try 16*16 first
+		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
+		int numTileY = (film->height + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
+		int totalTiles = numTileX * numTileY; // total number of tiles	
+
+		auto renderTiles = [this, tileSize, numTileX, numTileY](int tileIndex, int threadIdx) {
+			// locate pixels based on tileSize
+			int tileY = tileIndex / numTileX; // get row of tile position
+			int tileX = tileIndex % numTileX; // get column of tile position
+
+
+			unsigned int xStart = tileX * tileSize; // start of each tile
+			unsigned int xEnd = min(xStart + tileSize, film->width); // end of each tile(consider the last tile)
+			unsigned int yStart = tileY * tileSize;
+			unsigned int yEnd = min(yStart + tileSize, film->height);
+			//! Test code
+			//std::cout << "Processing tile " << tileIndex
+			//	<< " [" << xStart << "," << yStart << "]-["
+			//	<< xEnd << "," << yEnd << "]\n";
+
+
+			// »ñÈ¡µ±Ç°Ïß³Ì¶ÔÓ¦µÄËæ»úÊýÉú³ÉÆ÷
+			MTRandom* sampler = &samplers[threadIdx];
+
+			// render tiles
+			for (int s = 0; s < tileSize; ++s) {
+				// 生成光源路径并累积贡献到胶片
+				lightTrace(sampler);
+			}
+			
+			};
+
+		// create and launch threads
+		for (int i = 0; i < numProcs; ++i) {
+			threads[i] = new std::thread([=]() {
+				// we use = to ensure the exclusive resource for each thread
+				// Assign task for each thread, i: current thread, 
+				for (unsigned int tileIndex = i; tileIndex < totalTiles; tileIndex += numProcs) {
+
+					renderTiles(tileIndex, i);
+				}
+				});
+		}
+
+
+		for (int i = 0; i < numProcs; ++i) {
+			// check if threads exist and whether thread has already joined
+			if (threads[i] && threads[i]->joinable()) {
+				threads[i]->join();
+				// delete all threads after mission accomplished
+				delete threads[i];
+				// set thread pointer to nullptr to avoid wild pointer
+				threads[i] = nullptr;
+			}
+		}
+
+	}
+
 
 	void render() {
 
@@ -354,6 +436,7 @@ public:
 					 
 					// Colour col = pathTrace(ray, albedo,depth,sampler);
 					Colour col = pathTrace(ray, Colour(1.f,1.f,1.f), 0, sampler);
+
 					// Colour col = lightTrace(sampler);
 					//Colour col = computeDirect()
 					// Colour col = direct(ray, sampler);

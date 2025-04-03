@@ -287,18 +287,25 @@ public:
 	{
 		//Colour v = ShadingHelper::fresnelConductor();
 		//return v.toVec3();
-		Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
-		// TODO APPLY GGX HERE
-		Vec3 normal(0, 0, (woLocal.z>0 ? 1:-1));
+		if (alpha < 0.01f) {
+			Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
+			// TODO APPLY GGX HERE
+			Vec3 normal(0, 0, (woLocal.z > 0 ? 1 : -1));
 
-		Vec3 wiLocal = -woLocal + 2 * woLocal.dot(normal) * normal;
-		wiLocal = wiLocal.normalize();
+			Vec3 wiLocal = -woLocal + 2 * woLocal.dot(normal) * normal;
+			wiLocal = wiLocal.normalize();
 
-		// frenel
-		float cosTheta = std::abs(woLocal.dot(normal));
-		Colour fTheta = ShadingHelper::fresnelConductor(cosTheta, eta, k);
+			Vec3 wr = Vec3(-woLocal.x, -woLocal.y, woLocal.z);
+			Vec3 wi = shadingData.frame.toWorld(wr);
+			// frenel
+			float cosTheta = std::abs(woLocal.dot(normal));
+			reflectedColour = ShadingHelper::fresnelConductor(cosTheta, eta, k);
+			return wi;
+		}
 
-		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv)*fTheta;
+		/*Colour fTheta = ShadingHelper::fresnelConductor(cosTheta, eta, k);
+
+		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv)*fTheta;*/
 		pdf = 1.f;
 		Vec3 wiWorld = shadingData.frame.toWorld(wiLocal);
 		return wiWorld;

@@ -222,3 +222,12 @@ public:
 		return wi;
 	}
 };
+
+class VPL {
+public:
+	ShadingData shadingData;
+	Colour Le;
+	float pdf;
+
+	VPL(ShadingData _shadingData, Colour _Le) : shadingData(_shadingData), Le(_Le) {};
+};

@@ -231,38 +231,15 @@ public:
 	int SPP;
 	ImageFilter* filter;
 
-	//void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
-	//{
-	//	// Return a tonemapped pixel at coordinates x, y
-	//	// Change values directly inside the function
-	//	//TODO: Implement a tonemapping operator
-
-	//	// get the pixel value
-	//	Colour pixel = film[(y * width) + x] * exposure / (float)SPP; // film is an 1d array, so we need to calculate the index
-	//	// get luminance
-	//	float L = 0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b;
-	//	double temp = 1 / 2.2f;
-	//	float formula = std::pow((L / 1 + L), temp);
-
-
-	//	// reinhard Global
-	//	r *= formula;
-	//	g *= formula;
-	//	b *= formula;
-
-	//	// gamma correction
-	//	//r = std::min(powf(std::max(pixel.r, 0.0f), 1.f / 2.2f) * 255, 255.f);
-	//	//g = std::min(powf(std::max(pixel.g, 0.0f), 1.f / 2.2f) * 255, 255.f);
-	//	//b = std::min(powf(std::max(pixel.b, 0.0f), 1.f / 2.2f) * 255, 255.f);
-	//	// Return a tonemapped pixel at coordinates x, y
-
-	//}
-
+	// buffers
+	std::vector<float> colourBuffer;
+	std::vector<float> normalBuffer;
+	std::vector<float> albedoBuffer;
+	std::vector<float> outputBuffer;
+	
 
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
-
 	{
-
 		// Filmic Tone Mapping 
 
 		const float A = 0.22f;
