@@ -129,7 +129,7 @@ public:
 	{
 		
 		//if (bvh != nullptr) {
-		return bvh->traverse(ray, triangles);
+	 return bvh->traverse(ray, triangles);
 		//}
 
 		//! if do not have bvh
@@ -166,50 +166,8 @@ public:
 		pmf = 1.0f / (float)lights.size();
 		return lights[floor(r * lights.size())];
 
-		//// TODO BUG LOCATED:
-		//float totalPower = 0;
-		//for (Light* light : lights) {
-		//	totalPower += light->totalIntegratedPower();
-		//}
-
-		//float selectProb = sampler->next();
-		//float accum = 0;
-		//for (Light* light : lights) {
-		//	float lightProb = light->totalIntegratedPower() / totalPower;
-		//	if (selectProb < (accum + lightProb)) {
-		//		pmf = lightProb;
-		//		return light;
-		//	}
-		//	accum += lightProb;
-		//}
 	}
 		
-	
-
-	Light* sampleLightImportance(Sampler* sampler, float& pmf)
-	{
-//	TODO sampling light based on their power.
-
-		// Add code here
-// uniform sampling
-		//float r1 = sampler->next();
-		//pmf = 1.0f / lights.size();
-
-		////return lights[std::min((int)(r1 * lights.size()), (int)lights.size() - 1)];
-
-		//std::vector<float> lightWeights;
-		//for (Light* light : lights) {
-		//	lightWeights.push_back(light->totalIntegratedPower()); 
-		//}
-
-
-		//// choose light based on weight
-		//int index = dist.sample(sampler->next());
-		//pmf = lightWeights[index] / dist.totalWeight();
-		//return lights[index];
-
-	}
-
 	// Do not modify any code below this line
 	void init(std::vector<Triangle> meshTriangles, std::vector<BSDF*> meshMaterials, Light* _background)
 	{

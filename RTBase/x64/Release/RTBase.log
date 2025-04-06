@@ -1,46 +1,46 @@
 ﻿  Main.cpp
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(376,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(374,23): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(376,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(374,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(384,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(382,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(400,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,23): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(400,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(398,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(408,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Imaging.h(406,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(589,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(565,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(633,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(609,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(644,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(620,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(645,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(621,22): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(658,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(634,21): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(736,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(708,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
-C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(1150,48): warning C4018: '<': signed/unsigned mismatch
+C:\Users\u2100583\source\RTBaseNew\RTBase\Renderer.h(1057,48): warning C4018: '<': signed/unsigned mismatch
   (compiling source file 'Main.cpp')
   
   Generating code
-  11 of 2463 functions ( 0.4%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    14 functions had inline decision re-evaluated but remain unchanged
+  68 of 2331 functions ( 2.9%) were compiled, the rest were copied from previous compilation.
+    21 functions were new in current compilation
+    116 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   RTBase.vcxproj -> C:\Users\u2100583\source\RTBaseNew\x64\Release\RTBase.exe

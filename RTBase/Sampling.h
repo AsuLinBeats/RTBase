@@ -154,18 +154,34 @@ public:
 
 	}
 	Vec3 sample(float u1, float u2) {
-		// 步骤1：根据边缘分布选择行
-		auto y_it = std::lower_bound(marginalCDF.begin(), marginalCDF.end(), u1);
-		int y = std::distance(marginalCDF.begin(), y_it) - 1;
-		// y = std::clamp(y, 0, height - 1);
+		u1 = std::clamp(u1, 0.0f, 1.0f);
+		u2 = std::clamp(u2, 0.0f, 1.0f);
 
-		// 步骤2：根据条件分布选择列
+		//// choose row
+		//auto y_it = std::lower_bound(marginalCDF.begin(), marginalCDF.end(), u1);
+		//int y = std::distance(marginalCDF.begin(), y_it) - 1;
+		//// y = std::clamp(y, 0, height - 1);
+
+		//// choose column
+		//const auto& cdf = conditionalCDF[y];
+		//auto x_it = std::lower_bound(cdf.begin(), cdf.end(), u2);
+		//int x = std::distance(cdf.begin(), x_it) - 1;
+
+		auto y_it = std::upper_bound(marginalCDF.begin(), marginalCDF.end(), u1);
+		int y = std::clamp(
+			static_cast<int>(std::distance(marginalCDF.begin(), y_it)) - 1,
+			0, height - 1
+		);
+
+		// Step 3: 条件采样
 		const auto& cdf = conditionalCDF[y];
-		auto x_it = std::lower_bound(cdf.begin(), cdf.end(), u2);
-		int x = std::distance(cdf.begin(), x_it) - 1;
-		//x = std::clamp(x, 0, width - 1);
+		auto x_it = std::upper_bound(cdf.begin(), cdf.end(), u2);
+		int x = std::clamp(
+			static_cast<int>(std::distance(cdf.begin(), x_it)) - 1,
+			0, width - 1
+		);
 
-		// 步骤3：转换为方向向量（示例：球面坐标）
+		// change to direction vector
 		float phi = (x + 0.5f) / width * 2 * M_PI;
 		float theta = (y + 0.5f) / height * M_PI;
 		return Vec3{

@@ -241,13 +241,13 @@ public:
 	oidn::BufferRef outputBuffer;
 	
 	// for adaptive sampling
-	std::vector<Colour> tileColorSum;    // 分块颜色累积
-	std::vector<float> tileVariance;    // 分块颜色方差
-	std::vector<int> tileSampleCount;   // 分块已采样次数
-	std::vector<bool> tileNeedsMoreSamples; // 分块是否需要更多采样
-	int baseSPP = 1;                    // 基础每像素采样次数
-	int maxSPP = 64;                    // 最大采样次数
-	float varianceThreshold = 0.01f;    // 方差阈值（可调参数）
+	std::vector<Colour> tileColourSum;    // colour sum
+	std::vector<float> tileVariance;    // colour variance
+	std::vector<int> tileSampleCount;   // sample count 
+	std::vector<bool> tileNeedsMoreSamples; // more sample?
+	int baseSPP = 1;                    
+	int maxSPP = 64;                    
+	float varianceThreshold = 0.01f;    // thresold for variance
 
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
@@ -261,13 +261,13 @@ public:
 		const float F = 0.30f;
 		// ¼ÆËãË÷Òý
 		int index = y * width + x;
-		// ¶ÁÈ¡ HDR ÑÕÉ«Öµ£¨¼ÙÉè Colour ½á¹¹ÌåÓÐ r, g, b ·ÖÁ¿£
-		Colour hdrColor = film[index] / (float)SPP;  // ¹éÒ»»¯
-		// 1? ÏÈÓ¦ÓÃÆØ¹âµ÷Õû
+
+		Colour hdrColor = film[index] / (float)SPP; 
+
 		float r_hdr = hdrColor.r * exposure;
 		float g_hdr = hdrColor.g * exposure;
 		float b_hdr = hdrColor.b * exposure;
-		// 2? Filmic Tone Mapping ¹«Ê½
+
 		auto filmic = [&](float x) -> float {
 			float numerator = (x * (A * x + C * B) + D * E);
 			float denominator = (x * (A * x + B) + D * F);
@@ -276,7 +276,7 @@ public:
 		float r_mapped = filmic(r_hdr);
 		float g_mapped = filmic(g_hdr);
 		float b_mapped = filmic(b_hdr);
-		// 3? Gamma Ð£Õý£¨Í¨³£ gamma = 2.2£
+
 		float gamma = 1.0f / 2.2f;
 		r_mapped = powf(r_mapped, gamma);
 		g_mapped = powf(g_mapped, gamma);
@@ -332,14 +332,12 @@ public:
 
 	Colour getColour(int x, int y) const
 	{
-		// 越界检查，返回黑色
+		// return black when beyond range
 		if (x < 0 || x >= (int)width || y < 0 || y >= (int)height)
 			return Colour{ 0.0f, 0.0f, 0.0f };
 
-		// 计算一维索引
 		const int index = y * width + x;
 
-		// 返回归一化后的颜色（原始数据除以采样数）
 		return film[index] / static_cast<float>(SPP);
 	}
 

@@ -147,18 +147,18 @@ public:
 	}
 };
 
-class EnvironmentMap : public Light
+class EnvironmentMapEnv : public Light
 {
 public:
 	TabulatedDistributions* importanceDist;
 
 	Texture* env;
-	EnvironmentMap(Texture* _env)
+	EnvironmentMapEnv(Texture* _env)
 	{
 		env = _env;
 		importanceDist = new TabulatedDistributions(this->env);
 	}
-	~EnvironmentMap() {
+	~EnvironmentMapEnv() {
 		delete importanceDist;
 	}
 
@@ -184,6 +184,7 @@ public:
 		// calculate colour and pdf
 		reflectedColour = evaluate(wi);
 		pdf = PDF(shadingData, wi);
+
 
 		return wi;
 	}
@@ -222,8 +223,8 @@ public:
 		const float dOmega = (2.0f * M_PI / width) * (M_PI / height) * sinTheta;
 
 		// 从分布表中获取PDF（已包含立体角权重）
-		return importanceDist->getPDF(x, y) / dOmega;
-		
+		//return importanceDist->getPDF(x, y) / dOmega;
+		return importanceDist->getPDF(x, y) * (width * height) / (2 * M_PI * M_PI * sinTheta);
 		//return SamplingDistributions::uniformSpherePDF(wi);
 	}
 	bool isArea()
@@ -268,6 +269,16 @@ public:
 		pdf = SamplingDistributions::uniformSpherePDF(wi);
 		return wi;
 	}
+
+
+
+	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf,ShadingData& shadingData)
+	{
+		float u1 = sampler->next(), u2 = sampler->next();
+		Vec3 wi = importanceDist->sample(u1, u2);
+		pdf = PDF(shadingData, wi); 
+		return wi;
+	}
 };
 
 class VPL {
@@ -281,4 +292,78 @@ public:
 
 	VPL(ShadingData _shadingData, Colour _Le) : shadingData(_shadingData), Le(_Le) {};
 	VPL() {};
+};
+
+// old one
+class EnvironmentMap : public Light
+{
+public:
+	Texture* env;
+	EnvironmentMap(Texture* _env)
+	{
+		env = _env;
+	}
+	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	{
+		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
+		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		pdf = SamplingDistributions::uniformSpherePDF(wi);
+		reflectedColour = evaluate(wi);
+		return wi;
+	}
+	Colour evaluate(const Vec3& wi)
+	{
+		float u = atan2f(wi.z, wi.x);
+		u = (u < 0.0f) ? u + (2.0f * M_PI) : u;
+		u = u / (2.0f * M_PI);
+		float v = acosf(wi.y) / M_PI;
+		return env->sample(u, v);
+	}
+	float PDF(const ShadingData& shadingData, const Vec3& wi)
+	{
+		// Assignment: Update this code to return the correct PDF of luminance weighted importance sampling
+		return SamplingDistributions::uniformSpherePDF(wi);
+	}
+	bool isArea()
+	{
+		return false;
+	}
+	Vec3 normal(const ShadingData& shadingData, const Vec3& wi)
+	{
+		return -wi;
+	}
+	Vec3 normal(const Vec3& wi)
+	{
+		return -wi;
+	}
+	float totalIntegratedPower()
+	{
+		float total = 0;
+		for (int i = 0; i < env->height; i++)
+		{
+			float st = sinf(((float)i / (float)env->height) * M_PI);
+			for (int n = 0; n < env->width; n++)
+			{
+				total += (env->texels[(i * env->width) + n].Lum() * st);
+			}
+		}
+		total = total / (float)(env->width * env->height);
+		return total * 4.0f * M_PI;
+	}
+	Vec3 samplePositionFromLight(Sampler* sampler, float& pdf)
+	{
+		// Samples a point on the bounding sphere of the scene. Feel free to improve this.
+		Vec3 p = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		p = p * use<SceneBounds>().sceneRadius;
+		p = p + use<SceneBounds>().sceneCentre;
+		pdf = 1.0f / (4 * M_PI * SQ(use<SceneBounds>().sceneRadius));
+		return p;
+	}
+	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf)
+	{
+		// Replace this tabulated sampling of environment maps
+		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
+		pdf = SamplingDistributions::uniformSpherePDF(wi);
+		return wi;
+	}
 };

@@ -232,12 +232,11 @@ public:
 			}
 			cosThetaLight = max(cosThetaLight, 0.f);
 
-			// 使用光源的发射函数（注意发射方向通常取 -wi）
+
 			Colour Le = light->evaluate(-wi);
 			// calculate flux
 			Colour flux = Le * cosThetaLight / (lightpdf * pdfPosition * pdfDirection);
-
-			// 构造初始射线，从 p 点沿着 wi 发射
+			// init ray
 			Ray r(p, wi);
 
 			VPLTracePath(r, Colour(1.f, 1.f, 1.f), flux, sampler, 1);
@@ -255,46 +254,44 @@ public:
 		// shading data at intersection point
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
 
-		// 在当前交点生成一个 VPL
+		// create VPL when intersection
 		VPL vpl;
 		vpl.position = shadingData.x;
 		vpl.normal = shadingData.sNormal;
-		// 这里的 flux 为光通量乘上从光源到该点的 BSDF 传递（即 pathThroughput）
+		// BSDF* flux
 		vpl.pathThroughput = pathThroughput * flux;
 		VPLs.push_back(vpl);
 
-		// 达到最大递归深度则退出
+		// stop condition
 		if (depth >= 10) {
 			return;
 		}
 
-		// 通过 Russian Roulette 判断是否继续追踪
 		float rouletteProbability = min(pathThroughput.Lum(), 0.9f);
 		if (sampler->next() >= rouletteProbability) {
 			return;
 		}
-		// 调整 pathThroughput（注意不要在除法中出现 0）
+
 		if (rouletteProbability > 1e-6f) {
 			pathThroughput = pathThroughput / rouletteProbability;
 		}
 
-		// 从当前 BSDF 采样新方向
+		//. sample new direction from current BSDF
 		Colour bsdf;
 		float pdf;
 		Vec3 newWi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
 		if (pdf < 1e-6f) {
 			return;
 		}
-		// 余弦项
 		float cosTheta = fabsf(Dot(newWi, shadingData.sNormal));
-		// 更新透射量
+		// pathThroughput
 		pathThroughput = pathThroughput * bsdf * cosTheta / pdf;
 
-		// 进行 EPSILON 偏移以避免自遮挡
+		// avoid self-block
 		Vec3 offset = shadingData.sNormal * (Dot(newWi, shadingData.sNormal) > 0.f ? EPSILON : -EPSILON);
 		r.init(shadingData.x + offset, newWi);
 
-		// 递归追踪下一段路径
+		// track next path recursively
 		VPLTracePath(r, pathThroughput, flux, sampler, depth + 1);
 	}
 
@@ -303,25 +300,23 @@ public:
 	{
 		Colour indirect(0.0f, 0.0f, 0.0f);
 
-		// 遍历每个 VPL
 		for (const VPL& vpl : VPLs) {
-			// 从当前交点指向 VPL 的方向
+			// direction from intersection to VPL
 			Vec3 d = vpl.position - shadingData.x;
 			float distSq = d.lengthSq();
 			Vec3 wi = d.normalize();
 
-			// 计算几何项：
-			// G1：交点处的余弦因子
+			// cosine at intersection
 			float G1 = max(Dot(shadingData.sNormal, wi), 0.f);
-			// G2：VPL 法线（注意一般要求 VPL 表面“发光”方向与连线相反）的余弦因子
+			// VPL normal cosine
 			float G2 = max(-Dot(vpl.normal, wi), 0.f);
 			float GTerm = (G1 * G2) / distSq;
 
-			// 只有在几何项大于 0 且能看见时才累加贡献
+			// visibiklity check
 			if (GTerm > 0 && scene->visible(shadingData.x, vpl.position)) {
-				// 计算 BSDF 在该方向的响应
+				// BSDF
 				Colour bsdfVal = shadingData.bsdf->evaluate(shadingData, wi);
-				// 累加贡献：BSDF响应 * VPL 光通量 * 几何项
+				// BSDF * VPL * geometry
 				indirect =  indirect + bsdfVal * vpl.pathThroughput * GTerm;
 			}
 		}
@@ -340,13 +335,13 @@ public:
 		IntersectionData intersection = scene->traverse(r);
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
 		if (shadingData.t < FLT_MAX) {
-			// 如果击中的是光源，则直接返回光源发射
+			// if shoot light, return
 			if (shadingData.bsdf->isLight()) {
 				return shadingData.bsdf->emit(shadingData, shadingData.wo);
 			}
-			// 计算直接光照（你已有的实现）
+			// direct light
 			Colour direct = computeDirect(shadingData, sampler); // direct light do not need VPL
-			// 计算间接（VPL）光照
+			// indirect VPL light
 			Colour indirect = computeInDirectVPL(shadingData,sampler);
 			return direct + indirect;
 		}
@@ -355,13 +350,11 @@ public:
 
 	Colour pathTraceVPL(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
 	{
-		// 追踪射线与场景的相交
 		IntersectionData intersection = scene->traverse(r);
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
 
 		if (shadingData.t < FLT_MAX)
 		{
-			// 如果击中了光源，返回发射的光
 			if (shadingData.bsdf->isLight())
 			{
 				if (canHitLight)
@@ -370,23 +363,21 @@ public:
 					return Colour(0.0f, 0.0f, 0.0f);
 			}
 
-			// 计算直接光照（如真实光源采样）
+			// direct light
 			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
 
-			// 如果当前 BSDF 不是纯镜面，则计算间接（VPL）光照
+			// indirect VPL light
 			Colour indirect(0.0f, 0.0f, 0.0f);
 			if (!shadingData.bsdf->isPureSpecular())
 			{
 				indirect = pathThroughput * computeInDirectVPL(shadingData, sampler);
 			}
 
-			// 在达到最大递归深度时返回直接和间接贡献
 			if (depth > MAX_DEPTH)
 			{
 				return direct + indirect;
 			}
 
-			// Russian Roulette 终止递归
 			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
 			if (sampler->next() < russianRouletteProbability)
 			{
@@ -397,7 +388,6 @@ public:
 				return direct + indirect;
 			}
 
-			// 从 BSDF 采样新的方向
 			Colour bsdf;
 			float pdf;
 			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
@@ -406,22 +396,18 @@ public:
 				return direct + indirect;
 			}
 
-			// 更新透射量（乘以 BSDF、余弦项等）
+			// upgrade paththrought
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 
-			// 加上 EPSILON 防止阴影自遮挡
 			Vec3 offset = shadingData.sNormal * (Dot(wi, shadingData.sNormal) > 0 ? EPSILON : -EPSILON);
 			r.init(shadingData.x + offset, wi);
 
-			// 递归调用 pathTrace，将直接、间接和递归路径的贡献相加
 			return (direct + indirect + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
 		}
 
-		// 如果未击中任何物体，则返回背景光
+		// cases when no item shoot
 		return scene->background->evaluate(r.dir);
 	}
-
-
 
 	//! light tracing
 	void connectToCamera(Vec3 p, Vec3 n, Colour col) {
@@ -429,79 +415,73 @@ public:
 		Vec3 cameraPos = camera.origin;
 		Vec3 cameraDir = camera.viewDirection;
 
-		// 投影到相机平面
+		// project to camera
 		float u, v;
 		bool pOnCamera = scene->camera.projectOntoCamera(p, u, v);
 		if (!pOnCamera) return;
 
-		// 计算从 p 指向相机的方向
+		// direction from p to camera
 		Vec3 wi = (cameraPos - p).normalize();
 
-		// 计算几何项：点处法线与射线方向的余弦，以及相机视线和 -wi 之间的余弦
+		// geometry item
 		float cosTheta = max(Dot(n, wi), 0.f);
 		float cosThetaCam = max(Dot(cameraDir, -wi), 0.f);
 		float distanceSq = (cameraPos - p).lengthSq();
 		float g = (cosTheta * cosThetaCam) / distanceSq;
 
-		// 增加 EPSILON 偏移，防止自遮挡
+		// avoid self-block
 		Vec3 offsetP = p + n * EPSILON;
 		//if (g > 0.f) {
-			// 如果遮挡测试太严格，可先临时注释这一行，确保 visible() 函数无误
-			if (scene->visible(offsetP, scene->camera.origin)) {
-				// 注意 sensitivity 与 film 面积的数值是否合理
-				float contri = camera.sensitivity / scene->camera.Afilm;
-				printf("u:%.2f v:%.2f col:(%.3f,%.3f,%.3f) contri*g:%.3e\n",
-					u, v, col.r, col.g, col.b, contri * g);
-				film->splat(u, v, col * contri * g);
-			}
+			
+			//if (scene->visible(offsetP, scene->camera.origin)) {
+		
+			//	float contri = camera.sensitivity / scene->camera.Afilm;
+			//	film->splat(u, v, col * contri * g);
+			//}
 		//}
 	}
 	void lightTrace(Sampler* sampler) {
-		// 采样光源
+		// sample light
 		int depth = 10;
 		float lightpdf;
 		Light* light = scene->sampleLight(sampler, lightpdf);
 		if (!light || lightpdf == 0.f) {
-			printf("Light sampling failed or lightpdf == 0\n");
+			std::cout << "Light sampling failed or lightpdf == 0\n";
 			return;
 		}
 
-		// 采样光源位置和方向，同时获取对应的 PDF
+		// get light pos and dir, and their pdf
 		float pdfPosition = 0.f;
 		float pdfDirection = 0.f;
 		Vec3 p = light->samplePositionFromLight(sampler, pdfPosition);
 		Vec3 wi = light->sampleDirectionFromLight(sampler, pdfDirection);
 
-		// 检查 PDF 值，避免除以零
+		// avoid divided by 0
 		if (pdfPosition < 1e-6f || pdfDirection < 1e-6f) {
-			printf("Invalid PDF values: pdfPosition=%.3e, pdfDirection=%.3e\n", pdfPosition, pdfDirection);
+			std::cout << "Invalid PDF values: pdfPosition=%.3e, pdfDirection=%.3e\n" << pdfPosition << pdfDirection;
 			return;
 		}
 
-		// 获取与采样方向对应的光源法线，确认和采样方向一致
+		// get light normal according to sample directio 
 		Vec3 lightNormal = light->normal(wi);
 		float cosThetaLight = Dot(lightNormal, wi);
 		if (cosThetaLight <= 0.f) {
-			// 若 cosThetaLight 小于等于 0，则采样无效
-			printf("Invalid light sampling: cosThetaLight <= 0\n");
+			std::cout << "Invalid light sampling: cosThetaLight <= 0\n";
 			return;
 		}
 		cosThetaLight = max(cosThetaLight, 0.f);
 
-		// 使用光源发射函数，注意这里使用 -wi 表示发射方向
 		Colour Le = light->evaluate(-wi);
 		Colour contribution = Le * cosThetaLight / (lightpdf * pdfPosition * pdfDirection);
 
-		// 连接相机
 		connectToCamera(p, lightNormal, contribution);
 
-		// 创建光线继续追踪
+		// create and trace light
 		Ray r(p, wi);
 		lightTracePath(r, 1, Colour(1.f, 1.f, 1.f), Le, sampler);
 	}
 
 
-	// 修正后的 lightTracePath：增加 PDF 检查，并打印调试信息
 	const int MAX_DEPTH_LIGHT = 10;
 	void lightTracePath(Ray& r, int depth, Colour pathThroughput, Colour Le, Sampler* sampler) {
 		IntersectionData intersection = scene->traverse(r);
@@ -511,10 +491,10 @@ public:
 			if (depth > MAX_DEPTH_LIGHT)
 				return;
 
-			// 在每个交点连接相机
+			// connect to camera when intersection
 			connectToCamera(shadingData.x, shadingData.sNormal, pathThroughput * Le);
 
-			// 使用 Russian Roulette 控制路径深度
+
 			float russianRouletteProbability = min(pathThroughput.Lum(), 0.9f);
 			if (sampler->next() < russianRouletteProbability) {
 				pathThroughput = pathThroughput / russianRouletteProbability;
@@ -523,7 +503,7 @@ public:
 				return;
 			}
 
-			// 采样 BSDF 得到新方向，并获取 BSDF 值和 PDF
+			// sample bsdf and get bsdf value and pdf
 			Colour bsdf;
 			float pdf;
 			Vec3 newWi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
@@ -535,7 +515,7 @@ public:
 			float cosTheta = fabsf(Dot(newWi, shadingData.sNormal));
 			pathThroughput = pathThroughput * bsdf * cosTheta / pdf;
 
-			// 对交点进行 EPSILON 偏移，防止自遮挡
+			// use epsilon to avoid block itself
 			Vec3 offset = shadingData.sNormal * (Dot(newWi, shadingData.sNormal) > 0.f ? EPSILON : -EPSILON);
 			r.init(shadingData.x + offset, newWi);
 			lightTracePath(r, depth + 1, pathThroughput, Le, sampler);
@@ -668,7 +648,7 @@ public:
 	}
 
 	// TODO THIS IS PATH TRACING RENDER WITH INTEL DENOISER
-	void renderPath() {
+	void render() {
 		film->incrementSPP();
 		int tileSize = 20; // try 16*16 first
 		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
@@ -685,13 +665,8 @@ public:
 			unsigned int xEnd = min(xStart + tileSize, film->width); // end of each tile(consider the last tile)
 			unsigned int yStart = tileY * tileSize;
 			unsigned int yEnd = min(yStart + tileSize, film->height);
-			//! Test code
-			//std::cout << "Processing tile " << tileIndex
-			//	<< " [" << xStart << "," << yStart << "]-["
-			//	<< xEnd << "," << yEnd << "]\n";
 
 
-			// »ñÈ¡µ±Ç°Ïß³Ì¶ÔÓ¦µÄËæ»úÊýÉú³ÉÆ÷
 			MTRandom* sampler = &samplers[threadIdx];
 			
 			// render tiles
@@ -702,8 +677,8 @@ public:
 					Ray ray = scene->camera.generateRay(px, py);
 
 					 
-					// Colour col = pathTrace(ray, albedo,depth,sampler);
-					Colour col = pathTraceVPL(ray, Colour(1.f,1.f,1.f), 0, sampler);
+					Colour col = pathTrace(ray, Colour(1.f, 1.f, 1.f), 0,sampler);
+					// Colour col = pathTraceVPL(ray, Colour(1.f,1.f,1.f), 0, sampler);
 
 
 
@@ -711,15 +686,16 @@ public:
 					//Colour col = computeDirect()
 					// Colour col = direct(ray, sampler);
 					// Colour col = viewNormals(ray);
-					film->splat1(px, py, col);
+					 //film->splat1(px, py, col);
+					film->splat(px, py, col);
 
 
-					//unsigned char r = (unsigned char)(col.r * 255);
-					//unsigned char g = (unsigned char)(col.g * 255);
-					//unsigned char b = (unsigned char)(col.b * 255);
+					unsigned char r = (unsigned char)(col.r * 255);
+					unsigned char g = (unsigned char)(col.g * 255);
+					unsigned char b = (unsigned char)(col.b * 255);
 
-					// film->tonemap(x, y, r, g, b);
-					//canvas->draw(x, y, r, g, b);
+					 film->tonemap(x, y, r, g, b);
+					canvas->draw(x, y, r, g, b);
 				}
 			}
 		};
@@ -747,6 +723,7 @@ public:
 				threads[i] = nullptr;
 			}
 		}
+#if 0
 		// Denoise component
 		oidn::DeviceRef device = oidn::newDevice();
 		
@@ -758,7 +735,7 @@ public:
 		denoise1(device);
 		// apply tone map
 		tonemap();
-
+#endif
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Adaptive tile sampling
@@ -1015,7 +992,7 @@ Colour pathTraceMIS(Ray& r, Colour pathThroughput, int depth, Sampler* sampler, 
 	return scene->background->evaluate(r.dir);
 }
 
-	void render() {
+	void renderMIS() {
 		film->incrementSPP();
 		int tileSize = 20; // try 16*16 first
 		int numTileX = (film->width + tileSize - 1) / tileSize; // calculate number of tiles needed for rendering
