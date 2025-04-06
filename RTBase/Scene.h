@@ -19,6 +19,7 @@ public:
 	Vec3 origin;
 	Vec3 viewDirection;
 	float Afilm;
+	float sensitivity = 1.f;
 	void init(Matrix ProjectionMatrix, int screenwidth, int screenheight)
 	{
 		projectionMatrix = ProjectionMatrix;
@@ -122,6 +123,8 @@ public:
 			}
 		}
 	}
+
+
 	IntersectionData traverse(const Ray& ray)
 	{
 		

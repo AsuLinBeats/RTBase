@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Geometry.h"
@@ -26,6 +26,7 @@ public:
 	virtual float totalIntegratedPower() = 0;
 	virtual Vec3 samplePositionFromLight(Sampler* sampler, float& pdf) = 0;
 	virtual Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf) = 0;
+//	virtual float pdfArea(const Vec3& shadingPoint, const Vec3& lightPoint);
 };
 
 class AreaLight : public Light
@@ -40,6 +41,7 @@ public:
 		emittedColour = emission;
 		return triangle->sample(sampler, pdf);
 	}
+
 	Colour evaluate(const Vec3& wi)
 	{
 		if (Dot(wi, triangle->gNormal()) < 0)
@@ -148,13 +150,21 @@ public:
 class EnvironmentMap : public Light
 {
 public:
+	TabulatedDistributions* importanceDist;
+
 	Texture* env;
 	EnvironmentMap(Texture* _env)
 	{
 		env = _env;
+		importanceDist = new TabulatedDistributions(this->env);
 	}
-	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
+	~EnvironmentMap() {
+		delete importanceDist;
+	}
+
+	Vec3 sample1(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
+		// old one
 		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
 		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
 		pdf = SamplingDistributions::uniformSpherePDF(wi);
@@ -162,10 +172,27 @@ public:
 		return wi;
 	}
 
+	Vec3 sample(const ShadingData& shadingData, Sampler* sampler,
+		Colour& reflectedColour, float& pdf) override
+	{
+		float u1 = sampler->next();
+		float u2 = sampler->next();
+
+		// sample direction from table
+		Vec3 wi = importanceDist->sample(u1, u2);
+
+		// calculate colour and pdf
+		reflectedColour = evaluate(wi);
+		pdf = PDF(shadingData, wi);
+
+		return wi;
+	}
 	// TODO CHANGE SAMPLE, WEIGHTED OR MIS.
+
 	Vec3 sampleNew(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf) {
 
 	}
+
 	Colour evaluate(const Vec3& wi)
 	{
 		float u = atan2f(wi.z, wi.x);
@@ -177,7 +204,27 @@ public:
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
 		// Assignment: Update this code to return the correct PDF of luminance weighted importance sampling
-		return SamplingDistributions::uniformSpherePDF(wi);
+		// trans to uv coordinate
+		float u = std::atan2(wi.z, wi.x);
+		u = (u < 0.0f) ? u + 2.0f * M_PI : u;
+		u /= 2.0f * M_PI;
+		float v = std::acos(wi.y) / M_PI;
+
+		// transform to tabulated coordinate
+		const int width = env->width;
+		const int height = env->height;
+		const int x = static_cast<int>(u * width) % width;
+		const int y = static_cast<int>(v * height) % height;
+
+		// calculate solid angle
+		const float theta = v * M_PI;
+		const float sinTheta = std::sin(theta);
+		const float dOmega = (2.0f * M_PI / width) * (M_PI / height) * sinTheta;
+
+		// 从分布表中获取PDF（已包含立体角权重）
+		return importanceDist->getPDF(x, y) / dOmega;
+		
+		//return SamplingDistributions::uniformSpherePDF(wi);
 	}
 	bool isArea()
 	{
@@ -225,9 +272,13 @@ public:
 
 class VPL {
 public:
+	Vec3 position;   // VPL 产生的交点位置
+	Vec3 normal;     // 交点处法线
 	ShadingData shadingData;
 	Colour Le;
+	Colour pathThroughput;
 	float pdf;
 
 	VPL(ShadingData _shadingData, Colour _Le) : shadingData(_shadingData), Le(_Le) {};
+	VPL() {};
 };

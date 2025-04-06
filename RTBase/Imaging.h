@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,7 +7,7 @@
 #define __STDC_LIB_EXT1__
 #include "stb_image_write.h"
 #include<string>
-
+#include<OpenImageDenoise/oidn.hpp>
 // Stop warnings about buffer overruns if size is zero. Size should never be zero and if it is the code handles it.
 #pragma warning( disable : 6386)
 
@@ -231,74 +231,59 @@ public:
 	int SPP;
 	ImageFilter* filter;
 
-	// buffers
-	std::vector<float> colourBuffer;
-	std::vector<float> normalBuffer;
-	std::vector<float> albedoBuffer;
-	std::vector<float> outputBuffer;
+	// For intel denoise
+	Colour* albedoBuffer;
+	Colour* normalBuffer;
+
+	// buffers 
+	oidn::BufferRef colourBuffer;
+	//////////////////////std::vector<float> colourBuffer;
+	oidn::BufferRef outputBuffer;
 	
+	// for adaptive sampling
+	std::vector<Colour> tileColorSum;    // 分块颜色累积
+	std::vector<float> tileVariance;    // 分块颜色方差
+	std::vector<int> tileSampleCount;   // 分块已采样次数
+	std::vector<bool> tileNeedsMoreSamples; // 分块是否需要更多采样
+	int baseSPP = 1;                    // 基础每像素采样次数
+	int maxSPP = 64;                    // 最大采样次数
+	float varianceThreshold = 0.01f;    // 方差阈值（可调参数）
 
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
+		
 		// Filmic Tone Mapping 
-
 		const float A = 0.22f;
 		const float B = 0.30f;
 		const float C = 0.10f;
 		const float D = 0.20f;
 		const float E = 0.01f;
 		const float F = 0.30f;
-		// ��������
-
+		// ¼ÆËãË÷Òý
 		int index = y * width + x;
-
-		// ��ȡ HDR ��ɫֵ������ Colour �ṹ���� r, g, b ������
-
-		Colour hdrColor = film[index] / (float)SPP;  // ��һ��
-
-
-		// 1? ��Ӧ���ع����
-
+		// ¶ÁÈ¡ HDR ÑÕÉ«Öµ£¨¼ÙÉè Colour ½á¹¹ÌåÓÐ r, g, b ·ÖÁ¿£
+		Colour hdrColor = film[index] / (float)SPP;  // ¹éÒ»»¯
+		// 1? ÏÈÓ¦ÓÃÆØ¹âµ÷Õû
 		float r_hdr = hdrColor.r * exposure;
-
 		float g_hdr = hdrColor.g * exposure;
-
 		float b_hdr = hdrColor.b * exposure;
-
-		// 2? Filmic Tone Mapping ��ʽ
-
+		// 2? Filmic Tone Mapping ¹«Ê½
 		auto filmic = [&](float x) -> float {
-
 			float numerator = (x * (A * x + C * B) + D * E);
-
 			float denominator = (x * (A * x + B) + D * F);
-
 			return (numerator / denominator) - (E / F);
-
 			};
-
 		float r_mapped = filmic(r_hdr);
-
 		float g_mapped = filmic(g_hdr);
-
 		float b_mapped = filmic(b_hdr);
-
-		// 3? Gamma У����ͨ�� gamma = 2.2��
-
+		// 3? Gamma Ð£Õý£¨Í¨³£ gamma = 2.2£
 		float gamma = 1.0f / 2.2f;
-
 		r_mapped = powf(r_mapped, gamma);
-
 		g_mapped = powf(g_mapped, gamma);
-
 		b_mapped = powf(b_mapped, gamma);
-
 		r = static_cast<unsigned char>((r_mapped * 255.0f > 255.0f) ? 255.0f : ((r_mapped * 255.0f < 0.0f) ? 0.0f : r_mapped * 255.0f));
-
 		g = static_cast<unsigned char>((g_mapped * 255.0f > 255.0f) ? 255.0f : ((g_mapped * 255.0f < 0.0f) ? 0.0f : g_mapped * 255.0f));
-
 		b = static_cast<unsigned char>((b_mapped * 255.0f > 255.0f) ? 255.0f : ((b_mapped * 255.0f < 0.0f) ? 0.0f : b_mapped * 255.0f));
-
 	}
 
 	float Clamp(float& x, float& A, float& B, float& C, float& D, float& E, float& F, float& W) {
@@ -336,6 +321,28 @@ public:
 		clear();
 		filter = _filter;
 	}
+	void initBuffer(oidn::DeviceRef& device) {
+		const size_t bufferSize = width * height * 3 * sizeof(float);
+		colourBuffer = device.newBuffer(bufferSize);
+		outputBuffer = device.newBuffer(bufferSize);
+		albedoBuffer = new Colour[width * height];   
+		normalBuffer = new Colour[width * height];
+
+	}
+
+	Colour getColour(int x, int y) const
+	{
+		// 越界检查，返回黑色
+		if (x < 0 || x >= (int)width || y < 0 || y >= (int)height)
+			return Colour{ 0.0f, 0.0f, 0.0f };
+
+		// 计算一维索引
+		const int index = y * width + x;
+
+		// 返回归一化后的颜色（原始数据除以采样数）
+		return film[index] / static_cast<float>(SPP);
+	}
+
 	void clear()
 	{
 		memset(film, 0, width * height * sizeof(Colour));
@@ -359,6 +366,30 @@ public:
 	void splat(const float x, const float y, const Colour& L) {
 		float filterWeights[25]; // Storage to cache weights
 		unsigned int indices[25]; // Store indices to minimize computations
+		unsigned int used = 0;
+		float total = 0;
+		int size = filter->size();
+		for (int i = -size; i <= size; i++) {
+			for (int j = -size; j <= size; j++) {
+				int px = (int)x + j;
+				int py = (int)y + i;
+				if (px >= 0 && px < width && py >= 0 && py < height) {
+					indices[used] = (py * width) + px;
+					filterWeights[used] = filter->filter(j, i);
+					total += filterWeights[used];
+					used++;
+				}
+			}
+		}
+		for (int i = 0; i < used; i++) {
+			film[indices[i]] = film[indices[i]] + (L * filterWeights[i] / total);
+		}
+	}
+	
+
+	void splat1(const float x, const float y, const Colour& L) {
+		float filterWeights[25];
+		unsigned int indices[25];
 		unsigned int used = 0;
 		float total = 0;
 		int size = filter->size();

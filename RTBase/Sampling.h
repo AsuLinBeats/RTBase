@@ -3,7 +3,7 @@
 #include "Core.h"
 #include <random>
 #include <algorithm>
-
+#include"Imaging.h"
 class Sampler
 {
 public:
@@ -79,43 +79,114 @@ public:
 	}
 };
 
-//class SamplingDistributions
-//{
-//public:
-//    // 余弦加权半球采样
-//    static Vec3 cosineSampleHemisphere(float r1, float r2)
-//    {
-//        // 使用Malley方法进行余弦加权半球采样
-//        float phi = 2.0f * M_PI * r1;       // 方位角[0,2π]
-//        float sinTheta = std::sqrt(r2);     // 极角的正弦
-//        float cosTheta = std::sqrt(1.0f - r2); // 极角的余弦
-//        // 转换为笛卡尔坐标
-//        float x = sinTheta * std::cos(phi);
-//        float y = sinTheta * std::sin(phi);
-//        float z = cosTheta;
-//        return Vec3(x, y, z);  // 返回采样方向
-//    }
-//    // 余弦加权半球采样的概率密度函数
-//    static float cosineHemispherePDF(const Vec3& wi)
-//    {
-//        // wi必须归一化且在半球内(z > 0)
-//        return wi.z / M_PI;  // PDF与cosθ成正比，除以π归一化
-//    }
-//    // 均匀球体采样
-//    static Vec3 uniformSampleSphere(float r1, float r2)
-//    {
-//        float phi = 2.0f * M_PI * r1;       // 方位角[0,2π]
-//        float cosTheta = 1.0f - 2.0f * r2;  // 极角的余弦[-1,1]
-//        float sinTheta = std::sqrt(1.0f - cosTheta * cosTheta); // 极角的正弦
-//        // 转换为笛卡尔坐标
-//        float x = sinTheta * std::cos(phi);
-//        float y = sinTheta * std::sin(phi);
-//        float z = cosTheta;
-//        return Vec3(x, y, z);  // 返回采样方向
-//    }
-//    // 均匀球体采样的概率密度函数
-//    static float uniformSpherePDF(const Vec3& wi)
-//    {
-//        return 1.0f / (4.0f * M_PI);  // 单位球表面积为4π，PDF为1/4π
-//    }
-//};
+class TabulatedDistributions {
+
+	std::vector<float> marginalPDF;
+	std::vector<float> marginalCDF;
+	std::vector<std::vector<float>> conditionalPDF;
+	std::vector<std::vector<float>> conditionalCDF;
+	int width, height;
+public:
+	// This is for environment map
+	// 
+	// TabulatedDistributions(EnvironmentMap* env) { // Try to avoid using included environment map
+	TabulatedDistributions(Texture * tex) {
+		// Texture* tex = env->env;
+		width = tex->width;
+		height = tex->height;
+		//marginalPDF.resize(height, 0.0f);
+		// luminance matrix construction
+		std::vector<std::vector<float>> luminanceM(height, std::vector<float>(width, 0.f));// filled with 0 for now
+		float totalLuminance = 0.f;
+
+		for (int i = 0; i < height; ++i) {
+			float v = (i + 0.5f) / height;
+			float theta = v * M_PI;
+			float sinTheta = sin(theta);
+
+			for (int j = 0; j < width; ++j) {
+				float u = (j + 0.5f) / width;
+				Colour c = tex->sample(u, v);
+
+				float lum = c.r * 0.2126f + c.g * 0.7152f + c.b * 0.0722f;
+				luminanceM[i][j] = lum * sinTheta; //! unhandled bug position
+				totalLuminance += luminanceM[i][j];
+			}
+		}
+
+		marginalPDF.resize(height, 0.0f);
+		float temp = 1.0f / totalLuminance;
+		for (auto& row : luminanceM) {
+			for (float& val : row) {
+				val *= temp;
+			}
+		}
+		// build conditional distribution
+		conditionalPDF.resize(height);
+		conditionalCDF.resize(height);
+		for (int i = 0; i < height; ++i) {
+			conditionalPDF[i].resize(width);
+			if (i < 0 || i >= marginalPDF.size()) { std::cout << "error"; }
+			float rowSum = marginalPDF[i];
+
+			if (rowSum > 0) {
+				for (int j = 0; j < width; ++j) {
+					conditionalPDF[i][j] = luminanceM[i][j] / rowSum;
+				}
+			}
+			else {
+				// use uniform dist for 0 rows
+				std::fill(conditionalPDF[i].begin(), conditionalPDF[i].end(), 1.0f / width);
+			}
+
+			conditionalCDF[i].resize(width + 1);
+			conditionalCDF[i][0] = 0.0f;
+			for (int x = 0; x < width; ++x) {
+				conditionalCDF[i][x + 1] = conditionalCDF[i][x] + conditionalPDF[i][x];
+			}
+		}
+
+		marginalCDF.resize(height + 1);
+		marginalCDF[0] = 0.0f;
+		for (int i = 0; i < height; ++i) {
+			marginalCDF[i + 1] = marginalCDF[i] + marginalPDF[i];
+		}
+
+	}
+	Vec3 sample(float u1, float u2) {
+		// 步骤1：根据边缘分布选择行
+		auto y_it = std::lower_bound(marginalCDF.begin(), marginalCDF.end(), u1);
+		int y = std::distance(marginalCDF.begin(), y_it) - 1;
+		// y = std::clamp(y, 0, height - 1);
+
+		// 步骤2：根据条件分布选择列
+		const auto& cdf = conditionalCDF[y];
+		auto x_it = std::lower_bound(cdf.begin(), cdf.end(), u2);
+		int x = std::distance(cdf.begin(), x_it) - 1;
+		//x = std::clamp(x, 0, width - 1);
+
+		// 步骤3：转换为方向向量（示例：球面坐标）
+		float phi = (x + 0.5f) / width * 2 * M_PI;
+		float theta = (y + 0.5f) / height * M_PI;
+		return Vec3{
+			sin(theta) * cos(phi),
+			cos(theta),
+			sin(theta) * sin(phi)
+		};
+
+	}
+
+	float MarginalPDF(int y) {
+		if (y < 0 || y >= height) return 0.0f;
+		return marginalPDF[y];
+	}
+
+	float ConditionalPDF(int y, int x) {
+		if (y < 0 || y >= height || x < 0 || x >= width) return 0.0f;
+		return conditionalPDF[y][x];
+	}
+
+	float getPDF(int x, int y)  {
+		return conditionalPDF[y][x] * marginalPDF[y];
+	}
+};
